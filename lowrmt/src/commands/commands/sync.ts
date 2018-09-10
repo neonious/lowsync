@@ -417,8 +417,8 @@ export class SyncCommand extends Command {
     private transpileJavaScript(source: string): { compiled: string; map: string; } {
         const result = babel.transform(source, {
             presets: [
-                "es2015",
-                "stage-2"
+                require('babel-preset-es2015'),
+                require('babel-preset-stage-2')
             ],
             sourceMaps: 'both'
         });
