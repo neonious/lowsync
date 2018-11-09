@@ -4,13 +4,13 @@
         "strict": true,
         "moduleResolution": "node",
         "outDir": "build",
-        "rootDir": "..",
         "target": "ES6",
+        "sourceMap": true,
         "lib": [
             "dom",
             "es6"
         ],
-        "baseUrl": "..",
+        "baseUrl": ".",
         "paths": {
 			"@common/*": [
 				"common/*"
@@ -18,12 +18,13 @@
         },
         "jsx": "react",
         "experimentalDecorators": true,
+        "mapRoot": "build",
         "emitDecoratorMetadata": true,
         "strictFunctionTypes": false // commented out cuz rxjs typings give compile error in virtualtimescheduler.d.ts. until they update their lib, no strictFunctionTypes for us
     },
     "include": [
-        "src/**/*",
-		"../common/**/*"
+        "lowrmt/src/**/*",
+		"common/**/*"
     ],
     "files": [
         "gulpfile.ts"

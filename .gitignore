@@ -1,3 +1,5 @@
 node_modules/
-/lowrmt/build/
+/build/
 /lowrmt/doc/_build/
+/syncdir/
+/lowrmt.*.json

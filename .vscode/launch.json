@@ -1,0 +1,24 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch Program",
+      "program": "${workspaceFolder}\\build\\index.js",
+      "args": ["sync"],
+      "protocol": "inspector",
+      "console": "externalTerminal", // so can read from sdin
+      "sourceMaps": true,
+      "outFiles": ["${workspaceFolder}/build/**/*.js"],
+      "skipFiles": [
+        "${workspaceFolder}/node_modules/**/*.js",
+        "${workspaceFolder}/build/**/*.js"
+      ],
+      "smartStep": true
+    }
+  ]
+}

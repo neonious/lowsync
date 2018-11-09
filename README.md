@@ -19,17 +19,27 @@ View the official [documentation](https://www.neonious.com/Documentation/lowrmt)
 
 ## Development
 
+### Preparations
+
 - checkout the github repository (make sure to init/update submodules)
-- cd lowrmt
-- npm run init
+- `npm run init`
+- `npm run watch` (to build and watch for changes to source files and rebuild automatically)
 
-gulp tasks (use the locally installed version of gulp if you don't have it installed globally)
+### Run lowrmt as npm module
 
-- (cd lowrmt)
-- gulp publish-local: Pack the npm package and install into fresh folder in os temp dir (overrides existing). Then follow the on screen instructions to execute the package. This is for testing only.
-- gulp publish-local-dev: Same as above, but build in dev mode. This is for testing only.
-- gulp publish: Publish to npm.
-- gulp publish-doc: Publish documentation.
+- `npm link` (will link the working directory to the global npm namespace. Make sure first that you uninstall any existing installations of lowrmt)
+- run `lowrmt <command>` (see documentation for commands)
+
+### Debug lowrmt in vs code
+
+- just press `F5` (or "Start Debugging" in vs code menu) to launch the program in vs code, set breakpoints if you wish
+- adjust `.vscode/launch.json` to launch lowrmt with different arguments
+
+### Gulp tasks
+
+Use the locally installed version of gulp if you don't have it installed globally
+
+- `gulp publish-doc` - Publish documentation.
 
 ## License
 

@@ -11,12 +11,12 @@ import inquirer = require('inquirer');
 import { getRawConfig, saveConfig, validateConfig, Config, RawConfig, throwOnInvalidResult } from "./config";
 import { getRawAuthConfig, saveAuthConfig } from "./auth.config";
 import { LOWTYPES } from "./ioc/types";
-import { setHostPrefix } from "./index";
 import * as request from 'request-promise-native';
 import chalk from "chalk";
 import { TYPES } from "@common/src/types";
 import { AuthenticationService } from "@common/src/services/authentication/authentication";
 import { ipAddress } from "@common/src/common/regexConst";
+import { setHostPrefix } from './indexUtil';
 
 const prompt = inquirer.createPromptModule();
 
@@ -78,10 +78,10 @@ export class Program {
         return ip as string;
     }
 
-    private checkIpReachable(ip: string) {
+    private checkIpReachable(ip: string, port: number) {
         return request({
             method: 'POST',
-            uri: `http://${ip}:8000/api/Login`,
+            uri: `http://${ip}:${port}/api/Login`,
             headers: { "Content-Type": "application/json;charset=UTF-8" },
             timeout: 30_000,
             body: JSON.stringify({ password: Date.now().toString() })
@@ -141,13 +141,16 @@ export class Program {
 
     private async getLoginData() {
 
+        const rawConfig = await getRawConfig();
+        const port = rawConfig.port || 8000;
+
         const ip = await this.getData({
             checkDataExists: data => !!data && typeof data === 'string',
             notFoundMessage: 'The IP address for your device was not found in the configuration.',
             incorrectMessage: ip => `The device cannot be reached under the provided IP (${ip}). (network problem, or wrong IP). Try again with a new or the previous IP address`,
             saveMessage: 'Save new IP address into configuration?',
             askForFunction: this.askForIp.bind(this),
-            checkValidFunction: this.checkIpReachable.bind(this),
+            checkValidFunction: ip => this.checkIpReachable(ip, port!),
             getData: async () => {
                 const config = await getRawConfig();
                 return { config, data: config.ip };
@@ -157,8 +160,8 @@ export class Program {
                 await saveConfig(config);
             }
         }) as string;
-
-        setHostPrefix(`http://${ip}:8000`);
+        
+        setHostPrefix(`http://${ip}:${port}`);
 
         const password = await this.getData({
             checkDataExists: data => typeof data === 'string',

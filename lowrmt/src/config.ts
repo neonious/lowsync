@@ -1,4 +1,3 @@
-import fs = require('fs-extra');
 import { keys } from "@common/node_modules/ts-transformer-keys";
 import { RunError } from "./runError";
 import * as findUp from 'find-up';
@@ -7,6 +6,7 @@ import { loadJsonFindFile, saveJsonFindFile } from '@common/src/common/jsonUtil'
 export interface RawConfig {
     syncDir?: string;
     ip?: string;
+    port?:number;
     transpile?: boolean;
     exclude?: string[];
 }
@@ -15,6 +15,7 @@ const configKeys = new Set(keys<RawConfig>());
 export interface Config {
     syncDir: string;
     ip: string;
+    port:number;
     transpile?: boolean;
     exclude?: string[];
 }

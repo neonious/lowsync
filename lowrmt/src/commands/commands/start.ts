@@ -14,6 +14,9 @@ import { StopCommand } from './stop';
 import { LOWTYPES } from '../../ioc/types';
 import { TYPES } from '@common/src/types';
 import { HttpApiService } from '@common/src/services/http/api';
+import { toFlatStructure } from '../../../../common/src/settings/util';
+
+const prompt = inquirer.createPromptModule();
 
 @injectable()
 export class StartCommand extends Command {
@@ -26,13 +29,31 @@ export class StartCommand extends Command {
     }
 
     async run() {
-        const { file, force } = this.options;
+        const { file:optionsFile, force } = this.options;
+        let file=optionsFile;
+        if (!file){
+            const settings = await this.httpApiService.GetSettings();
+            let flatSettings = toFlatStructure<any>(settings);
+            file=flatSettings.code__main as string;
+        }
         let result = await this.httpApiService.Start({ action: 'start', file });
         switch (result) {
             case 'FILE_NOT_FOUND':
                 throw new RunError('The file to start does not exist.');
             case 'ALREADY_RUNNING':
+                let doRestart=false;
                 if (force) {
+                    doRestart=true;
+                } else {
+                    const { restart } = await prompt<{restart:boolean}>({
+                        name: 'restart',
+                        type: 'confirm',
+                        message: 'The user application is already running. Restart? (Use the --force option in the future to skip this prompt and force a restart.)',
+                        default: true,
+                    });
+                    doRestart=restart;
+                }
+                if (doRestart){
                     await this.httpApiService.Stop();
                     const result = await this.httpApiService.Start({ action: 'start', file });
                     switch (result) {
@@ -41,8 +62,6 @@ export class StartCommand extends Command {
                         case 'ALREADY_RUNNING':
                             throw new Error('Could not restart program.');
                     }
-                } else {
-                    throw new RunError('The program is already running. Use the --force option do force a restart.');
                 }
                 break;
         }

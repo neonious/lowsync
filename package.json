@@ -7,10 +7,14 @@
     "type": "git",
     "url": "https://github.com/neonious/lowrmt.git"
   },
-  "main": "index.js",
-  "bin": "index.js",
+  "main": "build/index.js",
+  "bin": "build/index.js",
+  "files": [
+    "build"
+  ],
   "scripts": {
-    "init": "npm i && cd ../common && npm i"
+    "init": "npm i && cd common && npm i",
+    "watch": "webpack --mode development --progress --watch"
   },
   "author": "neonious GmbH",
   "engines": {

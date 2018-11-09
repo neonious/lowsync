@@ -1,16 +1,14 @@
 import fs = require('fs-extra');
-import { RawConfig, configFileName } from '../../config';
-import inquirer = require('inquirer');
-import { InitOptions, StatusOptions, StartOptions, UpdateOptions, StopOptions, SettingsOptions, MonitorOptions, SyncOptions } from '../../args';
-import { isUndefined } from 'util';
+import { ipAddress } from '@common/src/common/regexConst';
+import { spawn } from 'child_process';
+import { injectable } from 'inversify';
 import { extname, join } from 'path';
-import replaceExt = require('replace-ext');
-import { ArgumentOutOfRangeError } from 'rxjs';
+import { isUndefined } from 'util';
+import { configFileName, RawConfig } from '../../config';
 import { RunError } from '../../runError';
 import { Command } from '../command';
-import { injectable, inject } from 'inversify';
-import * as prettyjson from 'prettyjson';
-import { ipAddress } from '@common/src/common/regexConst';
+import inquirer = require('inquirer');
+import replaceExt = require('replace-ext');
 
 const prompt = inquirer.createPromptModule();
 
@@ -63,6 +61,21 @@ export class InitCommand extends Command {
         }
         const json = JSON.stringify(newConfig, null, 4);
         await fs.writeFile(configPath, json, { encoding: 'utf8' });
+
+        const initIdx = process.argv.indexOf('init');
+        if (initIdx!==-1){
+            const { sync } = await prompt<{sync:boolean}>({
+                name: 'sync',
+                type: 'confirm',
+                message: 'Do you want to do an initial sync right now?',
+                default: true,
+            });
+    
+            if (sync){
+                const args = process.argv.slice(0,initIdx).concat(['sync']);
+                spawn(args[0],args.slice(1),{stdio:'inherit'})
+            }
+        }
     }
 
     private async askConfig(config: RawConfig) {
@@ -86,7 +99,7 @@ export class InitCommand extends Command {
             name: 'newSyncDir',
             type: 'string',
             message: 'Local directory that you want to sync with?',
-            default: syncDir,
+            default: syncDir || process.cwd(),
             validate: (value: string) => {
                 if (!value) {
                     return 'Empty input!';

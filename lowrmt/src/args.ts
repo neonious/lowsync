@@ -2,7 +2,7 @@ import * as yargs from 'yargs';
 import { Argv } from 'yargs';
 import { maxBy } from 'lodash';
 import { pad } from 'underscore.string';
-import chalk from '../node_modules/chalk';
+import chalk from 'chalk';
 import { RunError } from './runError';
 import { getDotKeyMapping, validateAll } from '@common/src/settings/util';
 import { SettingsKey } from '@common/src/settings/definitions';
@@ -24,7 +24,7 @@ export interface StatusOptions {
 
 export interface StartOptions {
     type: 'start',
-    file: string;
+    file?: string;
     force: boolean;
 }
 
@@ -67,7 +67,9 @@ export function jsonParse(str: string) {
     }
 }
 
-const argv = yargs
+export function parseArguments(): Options {
+    
+    const argv = yargs
     .strict()
     .command('init', 'Create an initial configuration file for lowrmt with sensible defaults.', yargs => yargs.demandCommand(0, 0))
     .command('settings', 'Display or modify settings of the neonious one.', yargs => {
@@ -138,7 +140,7 @@ const argv = yargs
             .example('$0 settings set example.setting="an example"', 'Sets the setting "example.setting" to "an example".')
     })
     .command('status', 'Print the status of the program on the neonious one.', yargs => yargs.demandCommand(0, 0))
-    .command('start <file>', 'Start the program on the neonious one.', yargs => {
+    .command('start [file]', 'Start the program on the neonious one.', yargs => {
         return yargs
             .positional('file', {
                 type: 'string',
@@ -176,8 +178,6 @@ const argv = yargs
         process.exit(1);
     }) as any)
     .argv;
-
-export function parseArguments(): Options {
 
     const command = argv._[0];
     switch (command) {
