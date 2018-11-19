@@ -81,7 +81,7 @@ export class Program {
     private checkIpReachable(ip: string, port: number) {
         return request({
             method: 'POST',
-            uri: `http://${ip}:${port}/api/Login`,
+            uri: `https://${ip}:${port}/api/Login`,
             headers: { "Content-Type": "application/json;charset=UTF-8" },
             timeout: 30_000,
             body: JSON.stringify({ password: Date.now().toString() })
@@ -142,7 +142,7 @@ export class Program {
     private async getLoginData() {
 
         const rawConfig = await getRawConfig();
-        const port = rawConfig.port || 8000;
+        const port = rawConfig.port || 8443;
 
         const ip = await this.getData({
             checkDataExists: data => !!data && typeof data === 'string',
@@ -161,7 +161,7 @@ export class Program {
             }
         }) as string;
         
-        setHostPrefix(`http://${ip}:${port}`);
+        setHostPrefix(`https://${ip}:${port}`);
 
         const password = await this.getData({
             checkDataExists: data => typeof data === 'string',

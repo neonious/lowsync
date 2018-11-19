@@ -16,7 +16,7 @@ import { osRelPathToRootedPosix } from '../util';
 import { RunError } from '../../../../runError';
 
 export class SyncToLocalError extends Error {
-  constructor(public readonly path: string, message: string) {
+  constructor(public readonly path: string, message: string, public readonly inner?: any) {
     super(message);
     Object.setPrototypeOf(this, new.target.prototype);
   }
@@ -62,10 +62,11 @@ async function synchronizeToLocalRecursive(
     }
     try {
       await fs.writeFile(fullPath, data);
-    } catch {
+    } catch (e){
       throw new SyncToLocalError(
         fullPath,
-        `The file could not be written on the PC.`
+        `The file could not be written on the PC.`,
+        e
       );
     }
     syncLog.push({
@@ -76,10 +77,11 @@ async function synchronizeToLocalRecursive(
   } else if (remote && remote.type === 'dir') {
     try {
       await fs.mkdirp(fullPath);
-    } catch {
+    } catch (e){
       throw new SyncToLocalError(
         fullPath,
-        `The directory could not be created on the PC.`
+        `The directory could not be created on the PC.`,
+        e
       );
     }
     syncLog.push({
@@ -126,10 +128,11 @@ export default async function synchronizeToLocal({
         await new Promise((resolve, reject) =>
           rimraf(fullPath, err => (err ? reject(err) : resolve()))
         );
-      } catch {
+      } catch(e) {
         throw new SyncToLocalError(
           fullPath,
-          `The file/folder could not be removed on the PC.`
+          `The file/folder could not be removed on the PC.`,
+          e
         );
       }
     }
@@ -144,7 +147,7 @@ export default async function synchronizeToLocal({
   } catch (e) {
     if (e instanceof SyncToLocalError) {
       throw new RunError(
-        `Error syncing file/folder to the PC. ${e.message} Path: ${e.path}`
+        `Error syncing file/folder to the PC. ${e.message} Path: ${e.path}`,e
       );
     }
     throw e;

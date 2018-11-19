@@ -42,11 +42,12 @@ export class SyncCommand extends Command {
         return path.resolve(path.dirname(getConfigPath()), value);
       }
       return value;
-    } catch {
+    } catch (e){
       throw new RunError(
         `Cannot resolve sync directory '${
           this.config.syncDir
-        }' to a valid path.`
+        }' to a valid path.`,
+        e
       );
     }
   }

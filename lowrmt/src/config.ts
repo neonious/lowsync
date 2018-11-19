@@ -81,7 +81,7 @@ export async function loadConfigThrow<T>(name: string): Promise<T> {
         return obj;
     } catch (ex) {
         if (ex instanceof SyntaxError) {
-            throw new RunError(`Cannot load configuration file '${name}'. Invalid JSON syntax in file!`);
+            throw new RunError(`Cannot load configuration file '${name}'. Invalid JSON syntax in file!`,ex);
         }
         throw ex;
     }

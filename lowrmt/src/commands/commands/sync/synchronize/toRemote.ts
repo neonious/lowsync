@@ -20,7 +20,7 @@ import * as assert from 'assert';
 import { RunError } from '../../../../runError';
 
 export class SyncToRemoteError extends Error {
-  constructor(public readonly path: string, message: string) {
+  constructor(public readonly path: string, message: string, public readonly inner?:any) {
     super(message);
     Object.setPrototypeOf(this, new.target.prototype);
   }
@@ -57,8 +57,8 @@ async function synchronizeToRemoteRecursive(
     let data;
     try {
       data = await fs.readFile(fullPath);
-    } catch {
-      throw new SyncToRemoteError(fullPath, 'Failed to read file on PC.');
+    } catch(e) {
+      throw new SyncToRemoteError(fullPath, 'Failed to read file on PC.', e);
     }
     const putBinaryFile = async (
       data: Uint8Array,
@@ -66,10 +66,11 @@ async function synchronizeToRemoteRecursive(
     ) => {
       try {
         await webdavService.putBinaryFile(posixPath, data, { ...options });
-      } catch {
+      } catch(e) {
         throw new SyncToRemoteError(
           posixPath,
-          'Failed to transfer file to remote.'
+          'Failed to transfer file to remote.',
+          e
         );
       }
     };
@@ -104,10 +105,11 @@ async function synchronizeToRemoteRecursive(
   } else if (local.type === 'dir') {
     try {
       await webdavService.createDirectory(posixPath);
-    } catch {
+    } catch (e){
       throw new SyncToRemoteError(
         posixPath,
-        'Failed to create folder on remote.'
+        'Failed to create folder on remote.',
+        e
       );
     }
     syncLog.push({
@@ -157,10 +159,11 @@ export default async function synchronizeToRemote({
       const slashPath = osRelPathToRootedPosix(relPath);
       try {
         await webdavService.deleteFile(slashPath);
-      } catch {
+      } catch(e) {
         throw new SyncToRemoteError(
           slashPath,
-          'Failed to delete file/folder on remote.'
+          'Failed to delete file/folder on remote.',
+          e
         );
       }
     }
@@ -176,7 +179,7 @@ export default async function synchronizeToRemote({
   } catch (e) {
     if (e instanceof SyncToRemoteError) {
       throw new RunError(
-        `Error syncing file/folder to the microcontroller. ${e.message} Path: ${e.path}`
+        `Error syncing file/folder to the microcontroller. ${e.message} Path: ${e.path}`,e
       );
     }
     throw e;

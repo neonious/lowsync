@@ -50,7 +50,7 @@ export class InitCommand extends Command {
                     newConfig = JSON.parse(content);
                 } catch (e) {
                     if (e instanceof SyntaxError) {
-                        throw new RunError('Cannot read configuration file.');
+                        throw new RunError('Cannot read configuration file.',e);
                     } else
                         throw e
                 }
