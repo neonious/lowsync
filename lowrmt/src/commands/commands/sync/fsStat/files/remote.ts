@@ -6,19 +6,21 @@ import * as assert from "assert";
 import matchesAnyGlob from './matchesAnyGlob';
 import { FsStat } from '..';
 
+interface Response {
+  href: string;
+  propstat: {
+    prop:
+      | {
+          getcontentlength: string;
+          md5sum: string;
+        }
+      | {};
+  };
+}
+
 interface PropfindData {
   multistatus: {
-    response: {
-      href: string;
-      propstat: {
-        prop:
-          | {
-              getcontentlength: string;
-              md5sum: string;
-            }
-          | {};
-      };
-    }[];
+    response: Response | Response[];
   };
 }
 
@@ -65,8 +67,10 @@ export default async function getRemoteFiles({
   });
 
   const stats: FsStat[] = [];
+  let res = result.multistatus.response;
+  res=Array.isArray(res)?res: [res]; 
 
-  for (const resp of result.multistatus.response) {
+  for (const resp of res) {
     let relPathPosix = resp.href.slice("/fs".length);
     if (relPathPosix === "/") continue;
     relPathPosix = decodeURIComponent(relPathPosix); // there were %20 in the string
