@@ -22,14 +22,19 @@ import FsStructure, {
 import getInitialActions from './sync/getInitialActions';
 import { isAskUserAction, isFinalAction } from './sync/initialAction';
 import { loadSyncDataFile, saveSyncDataFile } from './sync/syncDataFile';
-import synchronize from './sync/synchronize';
 import FinalAction from './sync/synchronize/finalAction';
-import SyncLog from './sync/synchronize/syncLog';
 import fs = require('fs-extra');
 import * as assert from 'assert';
 import { HttpApiService } from '../../../../common/src/services/http/api';
 import inquirer = require('inquirer');
 import { toFlatStructure } from '../../../../common/src/settings/util';
+import {
+  SyncFileFakeRemove,
+  SyncFile,
+  getFileSynchronizer,
+  SyncFileAdd
+} from './sync/synchronize/syncFile';
+import { getFilesToSynchronize } from './sync/synchronize/getFilesToSynchronize';
 
 const prompt = inquirer.createPromptModule();
 
@@ -160,6 +165,8 @@ export class SyncCommand extends Command {
 
     await this.prepareSyncFolder();
 
+    console.log('Fetching file system listings...');
+
     const localFiles = await getLocalFiles({
       rootDir: this.syncDir,
       excludeGlobs: this.exclude
@@ -187,17 +194,8 @@ export class SyncCommand extends Command {
 
     const finalActions = actions.filter(isFinalAction).concat(userFinalActions);
 
-    const syncLog: SyncLog[] = [];
-
-    await synchronize({
-      rootDir: this.syncDir,
-      local: localFileStruct,
-      remote: remoteFilesStruct,
-      actions: finalActions,
-      noTranspile: !this.doTranspile,
-      syncLog,
-      webdavService: this.webdavService
-    });
+    const syncLog: SyncFile[] = [];
+    const fakeSyncLog: SyncFileFakeRemove[] = [];
 
     if (
       !finalActions.filter(
@@ -205,6 +203,22 @@ export class SyncCommand extends Command {
       ).length
     ) {
       console.log('Nothing to synchonize.');
+    } else {
+      getFilesToSynchronize({
+        local: localFileStruct,
+        remote: remoteFilesStruct,
+        actions: finalActions,
+        syncLog,
+        fakeSyncLog
+      });
+
+      const synchronizer = getFileSynchronizer(
+        this.syncDir,
+        this.webdavService,
+        !this.doTranspile
+      );
+
+      await synchronizer(syncLog);
     }
 
     await this.updateBase(
@@ -214,16 +228,16 @@ export class SyncCommand extends Command {
       baseFilesStruct
     );
 
-    for (const { side, op, statType, path } of syncLog) {
-      const direction = side === 'pc' ? 'MC => PC' : 'PC => MC';
-      const sym = op === 'add' ? '+' : '-';
-      const fd =
-        statType === 'dir'
-          ? 'Folder'
-          : statType === 'file'
-          ? 'File'
-          : 'File/Folder';
-      console.log(`${direction}: ${sym}${fd} ${path}`);
+    for (const { destside, relPath, statType } of syncLog.filter(
+      s => s.type === 'add'
+    ) as SyncFileAdd[]) {
+      const direction = destside === 'pc' ? 'MC => PC' : 'PC => MC';
+      const fd = statType === 'dir' ? 'Folder' : 'File';
+      console.log(`${direction}: +${fd} ${relPath}`);
+    }
+    for (const { destside, relPath } of fakeSyncLog) {
+      const direction = destside === 'pc' ? 'MC => PC' : 'PC => MC';
+      console.log(`${direction}: -'File/Folder' ${relPath}`);
     }
 
     // if (startAfterSync){
