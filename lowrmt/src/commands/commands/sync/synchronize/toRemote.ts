@@ -86,6 +86,7 @@ async function synchronizeToRemoteRecursive(
       );
       await putBinaryFile(buffer, { headers });
       syncLog.push({
+        side: 'mc',
         op: 'add',
         statType: 'file',
         path: posixPath
@@ -97,6 +98,7 @@ async function synchronizeToRemoteRecursive(
         await putBinaryFile(data);
       }
       syncLog.push({
+        side: 'mc',
         op: 'add',
         statType: 'file',
         path: posixPath
@@ -113,6 +115,7 @@ async function synchronizeToRemoteRecursive(
       );
     }
     syncLog.push({
+      side: 'mc',
       op: 'add',
       statType: 'dir',
       path: posixPath
@@ -129,6 +132,7 @@ async function synchronizeToRemoteRecursive(
     }
   } else {
     syncLog.push({
+      side: 'mc',
       op: 'remove',
       path: posixPath
     });

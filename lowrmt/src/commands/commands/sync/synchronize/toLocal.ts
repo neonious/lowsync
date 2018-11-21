@@ -70,9 +70,10 @@ async function synchronizeToLocalRecursive(
       );
     }
     syncLog.push({
+      side:'pc',
       op: 'add',
       statType: 'file',
-      path: fullPath
+      path: relPath
     });
   } else if (remote && remote.type === 'dir') {
     try {
@@ -85,9 +86,10 @@ async function synchronizeToLocalRecursive(
       );
     }
     syncLog.push({
+      side:'pc',
       op: 'add',
       statType: 'dir',
-      path: fullPath
+      path: relPath
     });
     for (const filename of Object.keys(remote.content)) {
       await synchronizeToLocalRecursive(
@@ -95,13 +97,14 @@ async function synchronizeToLocalRecursive(
         join(relPath, filename),
         getSubStructure(remote, filename),
         syncLog,
-        webdavService
+        webdavService 
       );
     }
   } else {
     syncLog.push({
+      side: 'pc',
       op: 'remove',
-      path: fullPath
+      path: relPath 
     });
   }
 }

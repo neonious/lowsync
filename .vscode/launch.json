@@ -8,7 +8,7 @@
       "type": "node",
       "request": "launch",
       "name": "Launch Program",
-      "program": "${workspaceFolder}\\build\\index.js",
+      "program": "${workspaceFolder}/build/index.js",
       "args": ["sync"],
       "protocol": "inspector",
       "console": "externalTerminal", // so can read from sdin

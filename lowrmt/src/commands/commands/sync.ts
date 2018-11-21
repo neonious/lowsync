@@ -42,7 +42,7 @@ export class SyncCommand extends Command {
         return path.resolve(path.dirname(getConfigPath()), value);
       }
       return value;
-    } catch (e){
+    } catch (e) {
       throw new RunError(
         `Cannot resolve sync directory '${
           this.config.syncDir
@@ -214,7 +214,8 @@ export class SyncCommand extends Command {
       baseFilesStruct
     );
 
-    for (const { op, statType, path } of syncLog) {
+    for (const { side, op, statType, path } of syncLog) {
+      const direction = side === 'pc' ? 'MC => PC' : 'PC => MC';
       const sym = op === 'add' ? '+' : '-';
       const fd =
         statType === 'dir'
@@ -222,7 +223,7 @@ export class SyncCommand extends Command {
           : statType === 'file'
           ? 'File'
           : 'File/Folder';
-      console.log(`${sym}${fd} ${path}`);
+      console.log(`${direction}: ${sym}${fd} ${path}`);
     }
 
     // if (startAfterSync){
