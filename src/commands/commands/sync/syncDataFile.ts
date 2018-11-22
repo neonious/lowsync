@@ -5,7 +5,7 @@ import FsStructure, {
 import {
   loadJsonFile,
   saveJsonFile
-} from '../../../../../common/src/common/jsonUtil';
+} from '../../../../common/src/common/jsonUtil';
 
 namespace OldVersion {
   interface SizeMd5 {

@@ -20,7 +20,7 @@ import { StopCommand } from './stop';
 import { LOWTYPES } from '../../ioc/types';
 import { TYPES } from '@common/src/types';
 import { HttpApiService } from '@common/src/services/http/api';
-import { toFlatStructure } from '../../../../common/src/settings/util';
+import { toFlatStructure } from '../../../common/src/settings/util';
 
 const prompt = inquirer.createPromptModule();
 
