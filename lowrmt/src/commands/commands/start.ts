@@ -29,13 +29,7 @@ export class StartCommand extends Command {
     }
 
     async run() {
-        const { file:optionsFile, force } = this.options;
-        let file=optionsFile;
-        if (!file){
-            const settings = await this.httpApiService.GetSettings();
-            let flatSettings = toFlatStructure<any>(settings);
-            file=flatSettings.code__main as string;
-        }
+        const { file, force } = this.options;
         let result = await this.httpApiService.Start({ action: 'start', file });
         switch (result) {
             case 'FILE_NOT_FOUND':
