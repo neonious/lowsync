@@ -13,7 +13,7 @@ import { Program } from "../program";
 import { parseArguments, Options } from "../args";
 import { getRawConfig, Config, RawConfig } from "../config";
 
-export async function configureContainerLowRmt(container: Container) {
+export async function configureContainerLowSync(container: Container) {
     container.bind<Command>(LOWTYPES.Commands).to(InitCommand);
     container.bind<Command>(LOWTYPES.Commands).to(MonitorCommand);
     container.bind<Command>(LOWTYPES.Commands).to(SettingsCommand);

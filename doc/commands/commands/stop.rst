@@ -5,14 +5,14 @@ Stop
 Name
 ==================
 
-lowrmt-stop - Stop the program
+lowsync-stop - Stop the program
 
 Synopsis
 ==================
 
 .. code-block:: bash
 
-    lowrmt stop
+    lowsync stop
 
 Description
 ==================

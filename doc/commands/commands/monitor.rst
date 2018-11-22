@@ -5,14 +5,14 @@ Monitor
 Name
 ==================
 
-lowrmt-monitor - Read from stdout and write to stdin of the running program
+lowsync-monitor - Read from stdout and write to stdin of the running program
 
 Synopsis
 ==================
 
 .. code-block:: bash
 
-    lowrmt monitor
+    lowsync monitor
 
 Description
 ==================

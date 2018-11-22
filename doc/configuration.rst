@@ -2,7 +2,7 @@
 Configuration
 ###################
 
-The configuration is stored in the file *lowrmt.config.json*. The program searches for the file by traversing through all parent directories, starting from the current working directory.
+The configuration is stored in the file *lowsync.config.json*. The program searches for the file by traversing through all parent directories, starting from the current working directory.
 
 To create a new configuration file, use the :doc:`/commands/commands/init` command.
 

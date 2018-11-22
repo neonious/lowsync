@@ -1,11 +1,11 @@
 {
-  "name": "lowrmt",
+  "name": "lowsync",
   "version": "1.0.6",
   "license": "MIT",
   "description": "A tool to program the neonious one and other low.js for ESP32 based devices with external IDEs. Allows the user to sync directories to the device, change settings, start/stop programs and more.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/neonious/lowrmt.git"
+    "url": "https://github.com/neonious/lowsync.git"
   },
   "main": "build/index.js",
   "bin": "build/index.js",

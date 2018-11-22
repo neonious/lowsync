@@ -5,14 +5,14 @@ Update (show)
 Name
 ==================
 
-lowrmt-update-show - Display update information
+lowsync-update-show - Display update information
 
 Synopsis
 ==================
 
 .. code-block:: bash
 
-    lowrmt update show
+    lowsync update show
 
 Description
 ==================

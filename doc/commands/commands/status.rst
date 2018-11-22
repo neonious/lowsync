@@ -5,14 +5,14 @@ Status
 Name
 ==================
 
-lowrmt-status - Display the execution status
+lowsync-status - Display the execution status
 
 Synopsis
 ==================
 
 .. code-block:: bash
 
-    lowrmt status
+    lowsync status
 
 Description
 ==================

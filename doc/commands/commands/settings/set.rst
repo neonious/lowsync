@@ -5,14 +5,14 @@ Settings (set)
 Name
 ==================
 
-lowrmt-settings-set - Set settings of the device
+lowsync-settings-set - Set settings of the device
 
 Synopsis
 ==================
 
 .. code-block:: bash
 
-    lowrmt settings set <key-value-pairs..>
+    lowsync settings set <key-value-pairs..>
 
 Description
 ==================
@@ -33,6 +33,6 @@ Examples
 
 .. code-block:: bash
 
-    lowrmt settings set example.setting="an example"
+    lowsync settings set example.setting="an example"
 
 Sets the setting *example.setting* to *an example*.

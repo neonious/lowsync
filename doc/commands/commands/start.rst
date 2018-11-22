@@ -5,14 +5,14 @@ Start
 Name
 ==================
 
-lowrmt-start - Start the program
+lowsync-start - Start the program
 
 Synopsis
 ==================
 
 .. code-block:: bash
 
-    lowrmt start <file> [--force]
+    lowsync start <file> [--force]
 
 Description
 ==================
@@ -35,12 +35,12 @@ Examples
 
 .. code-block:: bash
 
-    lowrmt start /src/index.js
+    lowsync start /src/index.js
 
 Starts */src/index.js* and fails if a program is already running.
 
 .. code-block:: bash
 
-    lowrmt start "/src/an example.js" --force
+    lowsync start "/src/an example.js" --force
 
 Starts */src/an example.js* and will stop a currently running program beforehand.

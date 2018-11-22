@@ -2,7 +2,7 @@
 Commands
 ##################
 
-Lowrmt supports several commands. Please select a command from the navigation on the left.
+lowsync supports several commands. Please select a command from the navigation on the left.
 
 .. toctree::
    commands/init

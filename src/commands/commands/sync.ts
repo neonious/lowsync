@@ -60,9 +60,9 @@ export class SyncCommand extends Command {
   private get exclude() {
     return [
       ...(this.config.exclude || []),
-      '**/lowrmt.auth.config.json',
-      '**/lowrmt.sync.config.json',
-      '**/lowrmt.config.json'
+      '**/lowsync.auth.config.json',
+      '**/lowsync.sync.config.json',
+      '**/lowsync.config.json'
     ];
   }
 
@@ -80,7 +80,7 @@ export class SyncCommand extends Command {
   }
 
   private get syncFilePath(): string {
-    return path.join(process.cwd(), 'lowrmt.sync.config.json');
+    return path.join(process.cwd(), 'lowsync.sync.config.json');
   }
 
   private async updateBase(

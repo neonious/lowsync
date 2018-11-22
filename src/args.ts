@@ -71,7 +71,7 @@ export function parseArguments(): Options {
     
     const argv = yargs
     .strict()
-    .command('init', 'Create an initial configuration file for lowrmt with sensible defaults.', yargs => yargs.demandCommand(0, 0))
+    .command('init', 'Create an initial configuration file for lowsync with sensible defaults.', yargs => yargs.demandCommand(0, 0))
     .command('settings', 'Display or modify settings of the neonious one.', yargs => {
         return yargs
             .command('show [showSettings..]', 'Display the values of settings.', yargs => {

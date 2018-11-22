@@ -5,14 +5,14 @@ Settings (show)
 Name
 ==================
 
-lowrmt-settings-show - Display settings of the device
+lowsync-settings-show - Display settings of the device
 
 Synopsis
 ==================
 
 .. code-block:: bash
 
-    lowrmt settings show [keys..]
+    lowsync settings show [keys..]
 
 Description
 ==================
@@ -40,6 +40,6 @@ Examples
 
 .. code-block:: bash
 
-    lowrmt settings show
+    lowsync settings show
 
 Shows all settings and their corresponding values.

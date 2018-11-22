@@ -6,7 +6,7 @@ export interface RawAuthConfig {
     password?: string;
 }
 
-export const authConfigFileName = 'lowrmt.auth.config.json';
+export const authConfigFileName = 'lowsync.auth.config.json';
 
 export function getRawAuthConfig() {
     return loadConfigThrow<RawAuthConfig>(authConfigFileName);

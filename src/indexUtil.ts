@@ -3,7 +3,7 @@ import { HttpHandler } from "@common/src/services/http/handler/handler";
 import { getStatusText } from 'http-status-codes';
 import { Container } from "inversify";
 import "reflect-metadata";
-import { configureContainerLowRmt } from "./ioc/configure";
+import { configureContainerLowSync } from "./ioc/configure";
 import { RunError } from "./runError";
 
 let hostPrefix = '';
@@ -14,7 +14,7 @@ export function setHostPrefix(prefix: string) {
 export async function setupContainer(){
     const container = new Container({ defaultScope: 'Singleton' });
 
-    await configureContainerLowRmt(container);
+    await configureContainerLowSync(container);
 
     function getStatusTextNoError(status: number) {
         try {

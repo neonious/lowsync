@@ -5,14 +5,14 @@ Sync
 Name
 ==================
 
-lowrmt-sync - Synchronize files between this computer and the device
+lowsync-sync - Synchronize files between this computer and the device
 
 Synopsis
 ==================
 
 .. code-block:: bash
 
-    lowrmt sync [--no-transpile]
+    lowsync sync [--no-transpile]
 
 Description
 ==================
@@ -27,7 +27,7 @@ By default, all JavaScript files synced to the device will be compiled down to E
 
 The :code:`--no-transpile` option of this command and the (lower priority) transpile option of the :doc:`configuration </configuration>` work together to determine whether to transpile or not.
 
-In the current version only >= EcmaScript 6 files are transpiled. No TypeScript is supported by lowrmt currently.
+In the current version only >= EcmaScript 6 files are transpiled. No TypeScript is supported by lowsync currently.
 
 Turning off transpilation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -53,4 +53,4 @@ Displays a summary of the files that were synchronized.
 Files
 ==================
 
-The command will store it's internal data in a file named *lowrmt.sync.config.json* in the current working directory. Please do not change this file manually!
+The command will store it's internal data in a file named *lowsync.sync.config.json* in the current working directory. Please do not change this file manually!

@@ -20,13 +20,13 @@ export interface Config {
     exclude?: string[];
 }
 
-export const configFileName = 'lowrmt.config.json';
+export const configFileName = 'lowsync.config.json';
 
 export type ValidateResult = true | { key: string, msg: string };
 
 export function throwOnInvalidResult(result: ValidateResult) {
     if (result !== true) {
-        throw new RunError(`Invalid configuration (key '${result.key}', ${result.msg}). To create a new configuration file, or edit an existing one, run 'lowrmt init' in the directory of the new configuration file.`);
+        throw new RunError(`Invalid configuration (key '${result.key}', ${result.msg}). To create a new configuration file, or edit an existing one, run 'lowsync init' in the directory of the new configuration file.`);
     }
 }
 

@@ -9,7 +9,7 @@ if "%SPHINXBUILD%" == "" (
 )
 set SOURCEDIR=.
 set BUILDDIR=_build
-set SPHINXPROJ=lowrmtdoc
+set SPHINXPROJ=lowsyncdoc
 
 if "%1" == "" goto help
 

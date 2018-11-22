@@ -31,7 +31,7 @@ module.exports = (env, options) => {
             hints: false
         },
         entry: {
-            "app": path.resolve(__dirname, "lowrmt/src/index.ts"),
+            "app": path.resolve(__dirname, "src/index.ts"),
         },
         target: 'node',
         node: {

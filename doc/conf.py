@@ -19,7 +19,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = u'Lowrmt'
+project = u'Lowsync'
 copyright = u'2018, neonious GmbH'
 author = u'neonious GmbH'
 
@@ -102,7 +102,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'lowrmtdocdoc'
+htmlhelp_basename = 'lowsyncdocdoc'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -129,7 +129,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'lowrmtdoc.tex', u'lowrmtdoc Documentation',
+    (master_doc, 'lowsyncdoc.tex', u'lowsyncdoc Documentation',
      u'neonious GmbH', 'manual'),
 ]
 
@@ -139,7 +139,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'lowrmtdoc', u'lowrmtdoc Documentation',
+    (master_doc, 'lowsyncdoc', u'lowsyncdoc Documentation',
      [author], 1)
 ]
 
@@ -150,8 +150,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'lowrmtdoc', u'lowrmtdoc Documentation',
-     author, 'lowrmtdoc', 'One line description of project.',
+    (master_doc, 'lowsyncdoc', u'lowsyncdoc Documentation',
+     author, 'lowsyncdoc', 'One line description of project.',
      'Miscellaneous'),
 ]
 

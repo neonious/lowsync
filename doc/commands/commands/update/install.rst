@@ -5,14 +5,14 @@ Update (install)
 Name
 ==================
 
-lowrmt-update-install - Install an update for the device
+lowsync-update-install - Install an update for the device
 
 Synopsis
 ==================
 
 .. code-block:: bash
 
-    lowrmt update install
+    lowsync update install
 
 Description
 ==================
