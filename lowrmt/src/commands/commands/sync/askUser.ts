@@ -115,14 +115,14 @@ export default async function askUser({ actions }: AskUserOptions) {
       {
         name: `Overwrite microcontroller version with PC version (${[
           'discards microcontroller changes',
-          getWarnings(local, remote)
+          ...getWarnings(local, remote)
         ].join(', ')})`,
         value: 'syncToRemote'
       },
       {
         name: `Overwrite PC version with microcontroller version (${[
           'discards PC changes',
-          getWarnings(remote, local)
+          ...getWarnings(remote, local)
         ].join(', ')})`,
         value: 'syncToLocal'
       },
