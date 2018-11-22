@@ -4,6 +4,7 @@ import { AskUserAction } from './initialAction';
 import inquirer = require('inquirer');
 import FinalAction, { SyncActionType } from './synchronize/finalAction';
 import { FsAnyStat } from './fsStat';
+import { osRelPathToRootedPosix } from './util';
 
 const prompt = inquirer.createPromptModule();
 
@@ -47,7 +48,7 @@ function normalizePath(path: string | null) {
 }
 
 function getStatDescription(stat: FsAnyStat) {
-  if (!stat) return 'Non-existent.';
+  if (stat.type === 'non-existing') return 'Non-existent.';
   if (stat.type === 'file') {
     return `File, ${stat.size} bytes.`;
   }
@@ -78,7 +79,6 @@ export interface AskUserOptions {
 }
 
 export default async function askUser({ actions }: AskUserOptions) {
-
   const result: FinalAction[] = [];
 
   if (!actions.length) return result;
@@ -94,7 +94,7 @@ export default async function askUser({ actions }: AskUserOptions) {
 
     cols.appendRow([
       `${no}.`,
-      normalizePath(relativePath),
+      osRelPathToRootedPosix(relativePath),
       getProblem(local, remote),
       getStatDescription(local),
       getStatDescription(remote)
@@ -102,7 +102,7 @@ export default async function askUser({ actions }: AskUserOptions) {
   });
 
   console.log(problemIntro);
-  console.log();
+  console.log(); // new line
   cols.writeAll(console.log);
 
   for (let i = 0; i < actions.length; i++) {

@@ -3,7 +3,7 @@ import FinalAction from './synchronize/finalAction';
 
 export interface AskUserAction {
   type: 'askUser';
-  relativePath: string | null;
+  relativePath: string;
   local: FsAnyStat;
   remote: FsAnyStat;
 }
