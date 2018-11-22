@@ -8,7 +8,7 @@ import * as assert from 'assert';
 import * as fs from 'fs-extra';
 import { getStatusText } from 'http-status-codes';
 import * as path from 'path';
-import { GetRequestError } from '../../../../../../common/src/services/http/webdav';
+import { GetRequestError } from '@common/src/services/http/webdav';
 import { RunError } from '../../../../runError';
 import { osRelPathToRootedPosix } from '../util';
 import { SyncFile } from './syncFile';

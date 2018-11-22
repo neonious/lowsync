@@ -25,9 +25,8 @@ import { loadSyncDataFile, saveSyncDataFile } from './sync/syncDataFile';
 import FinalAction from './sync/synchronize/finalAction';
 import fs = require('fs-extra');
 import * as assert from 'assert';
-import { HttpApiService } from '../../../../common/src/services/http/api';
+import { HttpApiService } from '@common/src/services/http/api';
 import inquirer = require('inquirer');
-import { toFlatStructure } from '../../../../common/src/settings/util';
 import {
   SyncFileFakeRemove,
   SyncFile,

@@ -155,7 +155,7 @@ export function parseArguments(): Options {
             .example('$0 start "/src/an example.js" --force', '(Re)Starts "/src/an example.js" on the neonious one, even if a program is currently running.').demandCommand(0, 0)
     })
     .command('stop', 'Stop the program on the neonious one.', yargs => yargs.demandCommand(0, 0))
-    .command('sync', 'Sync and, by default, transpile the files from this computer to the neonious one.', yargs => {
+    .command(['sync', '$0'], 'Sync and, by default, transpile the files from this computer to the neonious one.', yargs => {
         return yargs
             .option('no-transpile', {
                 type: 'boolean',
@@ -180,6 +180,10 @@ export function parseArguments(): Options {
     .argv;
 
     const command = argv._[0];
+    if (!command){
+        const { noTranspile } = argv;
+        return { type: 'sync', noTranspile }
+    }
     switch (command) {
         case 'init':
             return { type: 'init' }
