@@ -237,7 +237,7 @@ export class SyncCommand extends Command {
     }
     for (const { destside, relPath } of fakeSyncLog) {
       const direction = destside === 'pc' ? 'MC => PC' : 'PC => MC';
-      console.log(`${direction}: -'File/Folder' ${relPath}`);
+      console.log(`${direction}: -File/Folder ${relPath}`);
     }
 
     // if (startAfterSync){
