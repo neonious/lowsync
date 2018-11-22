@@ -145,23 +145,23 @@ export class SyncCommand extends Command {
   }
 
   async run() {
-    // const { code: { status } } = await this.httpApiService.Status({ code: true });
+    const { code: { status } } = await this.httpApiService.Status({ code: true });
 
-    // let startAfterSync=false;
-    // if (status!=='stopped'){
-    //   const { restart } = await prompt<{restart:boolean}>({
-    //     name: 'restart',
-    //     type: 'confirm',
-    //     message: 'The user application is currently running (or paused). Stop before and restart after sync?',
-    //     default: true,
-    //   });
-    //   if (restart){
-    //     startAfterSync=true;
-    //     console.log('Stopping program...')
-    //     await this.httpApiService.Stop();
-    //     console.log('Syncing...')
-    //   }
-    // }
+    let startAfterSync=false;
+    if (status!=='stopped'){
+      const { restart } = await prompt<{restart:boolean}>({
+        name: 'restart',
+        type: 'confirm',
+        message: 'The user application is currently running (or paused). Stop before and restart after sync?',
+        default: true,
+      });
+      if (restart){
+        startAfterSync=true;
+        console.log('Stopping program...')
+        await this.httpApiService.Stop();
+        console.log('Syncing...')
+      }
+    }
 
     await this.prepareSyncFolder();
 
@@ -240,16 +240,14 @@ export class SyncCommand extends Command {
       console.log(`${direction}: -File/Folder ${relPath}`);
     }
 
-    // if (startAfterSync){
-    //   console.log('Starting program again...')
-    //   const settings = await this.httpApiService.GetSettings();
-    //   let flatSettings = toFlatStructure<any>(settings);
-    //   let result = await this.httpApiService.Start({ action: 'start', file:flatSettings.code__main });
-    //   if (result==='FILE_NOT_FOUND'){
-    //     throw new RunError(`The file to start (${flatSettings.code__main}) does not exist.`);
-    //   }else if (result){
-    //     throw new RunError('Could not start program: ' + result);
-    //   }
-    // }
+    if (startAfterSync){
+      console.log('Starting program again...')
+      let result = await this.httpApiService.Start({ action: 'start' });
+      if (result==='FILE_NOT_FOUND'){
+        throw new RunError(`The file to start does not exist.`);
+      }else if (result){
+        throw new RunError('Could not start program: ' + result);
+      }
+    }
   }
 }
