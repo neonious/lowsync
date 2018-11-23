@@ -177,30 +177,32 @@ export class SyncCommand extends Command {
       httpService: this.httpService,
       hostPrefixHandler: this.hostPrefixHandler
     });
-    if (!hadPut){
-      if (localFiles.length){
+    if (!hadPut) {
+      const syncFileExists = await fs.pathExists(this.syncFilePath);
+      if (localFiles.length && syncFileExists){
         const { action } = await prompt<{action:'abort'|'initial_sync'}>({
           name: 'action',
           type: 'list',
           message: 'The filesystem of the microcontroller has not been synced before. What would you like to do?',
+          default: 'abort',
           choices: [
-            {
-              name: 'Discard sync history and do an initial sync. This will ask you how to resolve all cases where local and remote file/folders are in conflict. NO existing files or folders will be automatically overridden.',
-              value: 'initial_sync'
-            },
             {
               name: 'Abort synchronization',
               value: 'abort'
             },
+            {
+              name: 'Discard sync history and do an initial sync. This will ask you how to resolve all cases where local and remote file/folders are in conflict. NO existing files or folders will be automatically overridden.',
+              value: 'initial_sync'
+            }
           ]
         });  
 
-        if (action==='abort'){
+        if (action === 'abort'){
           return;
         }
       }
 
-      if (await fs.pathExists(this.syncFilePath)){
+      if (syncFileExists){
         await fs.unlink(this.syncFilePath);
       }
     }
