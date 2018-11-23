@@ -67,9 +67,7 @@ export function jsonParse(str: string) {
     }
 }
 
-export function parseArguments(): Options {
-    
-    const argv = yargs
+const argv = yargs
     .strict()
     .command('init', 'Create an initial configuration file for lowsync with sensible defaults.', yargs => yargs.demandCommand(0, 0))
     .command('settings', 'Display or modify settings of the neonious one.', yargs => {
@@ -178,6 +176,8 @@ export function parseArguments(): Options {
         process.exit(1);
     }) as any)
     .argv;
+
+export function parseArguments(): Options {
 
     const command = argv._[0];
     if (!command){

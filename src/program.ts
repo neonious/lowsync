@@ -17,6 +17,7 @@ import { TYPES } from "@common/src/types";
 import { AuthenticationService } from "@common/src/services/authentication/authentication";
 import { ipAddress } from "@common/src/common/regexConst";
 import { setHostPrefix } from './indexUtil';
+import { httpsPool } from '../common/src/services/http/handler/node';
 
 const prompt = inquirer.createPromptModule();
 
@@ -81,6 +82,7 @@ export class Program {
     private checkIpReachable(ip: string, port: number) {
         return request({
             method: 'POST',
+            agent: httpsPool,
             uri: `https://${ip}:${port}/api/Login`,
             headers: { "Content-Type": "application/json;charset=UTF-8" },
             timeout: 30_000,

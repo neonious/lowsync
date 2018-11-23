@@ -30,7 +30,7 @@ export class UpdateCommand extends Command {
     private async showUpdate(info?: Status.Update.Update) {
         if (info) {
             console.log('A new update is available:');
-            console.log(prettyjson.render(info));
+            console.log(prettyjson.render({changelog:info.changelog}));
         } else {
             console.log('There is no update currently available.');
         }

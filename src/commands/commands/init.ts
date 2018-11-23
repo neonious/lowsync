@@ -2,7 +2,7 @@ import fs = require('fs-extra');
 import { ipAddress } from '@common/src/common/regexConst';
 import { spawn } from 'child_process';
 import { injectable } from 'inversify';
-import { extname, join } from 'path';
+import { extname, join, relative } from 'path';
 import { isUndefined } from 'util';
 import { configFileName, RawConfig } from '../../config';
 import { RunError } from '../../runError';
@@ -107,7 +107,7 @@ export class InitCommand extends Command {
                 return true;
             }
         }) as any;
-        config.syncDir = newSyncDir;
+        config.syncDir = relative(process.cwd(),newSyncDir)||'.';
 
         const { newTranspile } = await prompt({
             name: 'newTranspile',
