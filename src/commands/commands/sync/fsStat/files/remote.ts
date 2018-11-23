@@ -56,7 +56,8 @@ export default async function getRemoteFiles({
       "lowrmt-md5": "1"
     }
   }); // todo error handling here too
-  const { responseText } = await requestPromise;
+  const { responseText, headers } = await requestPromise;
+  const hadPut = headers['lowrmt-had-put']==='1';
   const result = await new Promise<PropfindData>((resolve, reject) => {
     parseString(responseText, { explicitArray: false }, (err, result) => {
       if (err) {
@@ -96,5 +97,5 @@ export default async function getRemoteFiles({
     }
   }
 
-  return stats;
+  return { stats, hadPut  };
 }

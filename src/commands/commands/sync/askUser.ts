@@ -1,5 +1,5 @@
 import { maxBy } from 'lodash';
-import { pad } from 'underscore.string';
+import { rpad } from 'underscore.string';
 import { AskUserAction } from './initialAction';
 import inquirer = require('inquirer');
 import FinalAction, { SyncActionType } from './synchronize/finalAction';
@@ -22,7 +22,7 @@ class ConsoleColumns {
     this.rows.push(cols);
   }
 
-  writeAll(writeFunction: (str: string) => void) {
+  writeAll(writeFunction: (str?: string) => void) {
     if (typeof this.numCols === 'undefined')
       throw new Error('No columns were added.');
 
@@ -32,13 +32,19 @@ class ConsoleColumns {
       maxColumnsLengths.push(rowWithMaxCol[col].length);
     }
 
+    let had=false;
     for (const row of this.rows) {
+    
       let printRowStr = '';
       for (let col = 0; col < row.length; col++) {
         const maxWidth = maxColumnsLengths[col];
-        printRowStr += pad(row[col], maxWidth + 1); // 1 for space between columns
+        printRowStr += rpad(row[col], maxWidth + 2); // 2 for space between columns
       }
       writeFunction(printRowStr);
+      if (!had){
+        writeFunction(); // space between header and first real row
+        had=true;
+      }
     }
   }
 }
@@ -104,6 +110,7 @@ export default async function askUser({ actions }: AskUserOptions) {
   console.log(problemIntro);
   console.log(); // new line
   cols.writeAll(console.log);
+  console.log(); // new line
 
   for (let i = 0; i < actions.length; i++) {
     const no = i + 1;
