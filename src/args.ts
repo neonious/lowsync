@@ -70,7 +70,7 @@ export function jsonParse(str: string) {
 const argv = yargs
     .strict()
     .locale('en') // so that yargs generated text is in english, just like the other text
-    .command(['[sync]', '$0'], 'Sync and, by default, transpile the files from this computer to the neonious one.', yargs => {
+    .command(['[sync]', '$0'], 'Sync and, by default, transpile the files from this computer to the microcontroller.', yargs => {
         return yargs
             .option('no-transpile', {
                 type: 'boolean',
@@ -79,9 +79,9 @@ const argv = yargs
             }).demandCommand(0, 0)
     })
     .command('init', 'Create an initial configuration file for lowsync with sensible defaults.', yargs => yargs.demandCommand(0, 0))
-    .command('settings', 'Display or modify settings of the neonious one.', yargs => {
+    .command('settings', 'Display or modify settings of the microcontroller.', yargs => {
         return yargs
-            .command('show [showSettings..]', 'Display the values of settings.', yargs => {
+            .command('show [showSettings..]', 'Display the values of one or multiple settings.', yargs => {
                 return yargs.positional('showSettings', {
                     describe: 'The settings you want to display the values for. Leave out to show all values.'
                 }).check(argv => {
@@ -98,7 +98,7 @@ const argv = yargs
                     return true;
                 })
             })
-            .command('set [setSettings..]', 'Change a setting. To list possible settings, run "settings show"', yargs => {
+            .command('set [setSettings..]', 'Change one or multiple settings. To list possible settings, run "settings show"', yargs => {
                 return yargs
                     .positional('setSettings', {
                         describe: 'The settings you want to change. In the form of <setting>=<value>. Enclose string values with quotes ("").',
@@ -144,25 +144,26 @@ const argv = yargs
             })
             .demandCommand(1, 1)
             .example('$0 settings show', 'Shows all settings and their corresponding values.')
-            .example('$0 settings set example.setting="an example"', 'Sets the setting "example.setting" to "an example".')
+            .example('$0 settings set wifi.mode="station" wifi.ssid="MySSID"', 'Sets the wifi\'s "mode" and "ssid" settings.')
     })
-    .command('start [file]', 'Start the program on the neonious one.', yargs => {
+    .command('start [file]', 'Start the program on the microcontroller.', yargs => {
         return yargs
             .positional('file', {
                 type: 'string',
-                describe: 'The path of the file on the neonious one that will serve as the entry point.'
+                describe: 'The path of the file on the microcontroller that will serve as the entry point.'
             })
             .option('force', {
                 type: 'boolean',
                 default: false,
                 describe: 'Also restarts the program if it is running or paused.'
             })
-            .example('$0 start /src/index.js', 'Starts /src/index.js on the neonious one.')
-            .example('$0 start "/src/an example.js" --force', '(Re)Starts "/src/an example.js" on the neonious one, even if a program is currently running.').demandCommand(0, 0)
+            .example('$0 start /src/index.js', 'Starts /src/index.js on the microcontroller.')
+            .example('$0 start "/src/an example.js" --force', '(Re)Starts "/src/an example.js" on the microcontroller, even if a program is currently running.').demandCommand(0, 0)
     })
-    .command('stop', 'Stop the program on the neonious one.', yargs => yargs.demandCommand(0, 0))
-    .command('status', 'Print the status of the program on the neonious one.', yargs => yargs.demandCommand(0, 0))
-    .command('monitor', 'Show the output of the running program (process.stdout) and enable interaction with standard input (process.stdin).', yargs => yargs.demandCommand(0, 0))
+    .command('stop', 'Stop the program on the microcontroller.', yargs => yargs.demandCommand(0, 0))
+    .command('status', 'Print the status of the program on the microcontroller.', yargs => yargs.demandCommand(0, 0))
+    .command('monitor', 'Show the output of the running program (process.stdout).', yargs => yargs.demandCommand(0, 0))
+    .command('flash <port> [params..]','Flash low.js to generic ESP32-WROVER microcontroller board.')
     .command('update', 'Display available updates for the neonious one and/or install them.', yargs => {
         return yargs
             .command('show', 'Display available updates, if any.')

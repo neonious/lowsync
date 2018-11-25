@@ -15,8 +15,8 @@
       "sourceMaps": true,
       "outFiles": ["${workspaceFolder}/build/**/*.js"],
       "skipFiles": [
-        "${workspaceFolder}/node_modules/**/*.js",
-        "${workspaceFolder}/build/**/*.js"
+        "${workspaceFolder}/node_modules/**",
+        "<node_internals>/**"
       ],
       "smartStep": true
     }

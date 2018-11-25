@@ -16,7 +16,7 @@ export abstract class Command implements CommandOptions {
     readonly requestConfig?: ("syncDir" | "ip" | "transpile" | "exclude")[] | undefined;
 
     @inject(LOWTYPES.RawConfig)
-    private rawConfig!: RawConfig;
+    protected rawConfig!: RawConfig;
 
     private configCache: { [K in keyof Config]: Config[K] } | undefined;
     get config(): { [K in keyof Config]: Config[K] } {

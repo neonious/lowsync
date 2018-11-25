@@ -6,7 +6,7 @@ import { inject, injectable } from 'inversify';
 import { cloneDeep } from 'lodash';
 import * as path from 'path';
 import { SyncOptions } from '../../args';
-import { getConfigPath } from '../../config';
+import { getConfigPath, configFileName } from '../../config';
 import { LOWTYPES } from '../../ioc/types';
 import { RunError } from '../../runError';
 import { Command } from '../command';
@@ -34,6 +34,7 @@ import {
   SyncFileAdd
 } from './sync/synchronize/syncFile';
 import { getFilesToSynchronize } from './sync/synchronize/getFilesToSynchronize';
+import { relative, join } from 'path';
 
 const prompt = inquirer.createPromptModule();
 
@@ -144,6 +145,26 @@ export class SyncCommand extends Command {
   }
 
   async run() {
+    if (!this.rawConfig.syncDir){
+        const { newSyncDir } = await prompt<{newSyncDir:string}>({
+          name: 'newSyncDir',
+          type: 'string',
+          message: 'The sync directory is unknown. What is the local directory that you want to sync with?',
+          default: process.cwd(),
+          validate: (value: string) => {
+              if (!value) {
+                  return 'Empty input!';
+              }
+              return true;
+          }
+      });
+      const syncDir=relative(process.cwd(),newSyncDir)||'.';
+      this.rawConfig.syncDir=syncDir;
+      const json = JSON.stringify(this.rawConfig, null, 4);
+      const configPath = join(process.cwd(), configFileName);
+      await fs.writeFile(configPath, json, { encoding: 'utf8' });
+    }
+
     const { code: { status } } = await this.httpApiService.Status({ code: true });
 
     let startAfterSync=false;

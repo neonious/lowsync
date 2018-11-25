@@ -1,5 +1,5 @@
 import { inject, injectable } from 'inversify';
-import { mapKeys, mapValues, maxBy, pickBy } from 'lodash';
+import { mapKeys, mapValues, maxBy, pickBy, chain } from 'lodash';
 import { pad } from 'underscore.string';
 
 import { SettingsOptions, jsonParse } from '../../args';
@@ -84,10 +84,7 @@ export class SettingsCommand extends Command {
     private async getValues(dotKeysToKey: Dict<string>) {
         const settings = await this.httpApiService.GetSettings();
         const flatSettings = toFlatStructure<any>(settings);
-        fillFlatStructureWithDefaults(flatSettings);
-        return mapValues(dotKeysToKey, (key: SettingsKey) => {
-            return flatSettings[key];
-        })
+        return chain(dotKeysToKey).pickBy(key => key in flatSettings).mapValues((key:SettingsKey)=>flatSettings[key]).value();
     }
 
     async run() {
