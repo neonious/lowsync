@@ -69,6 +69,7 @@ export function jsonParse(str: string) {
 
 const argv = yargs
     .strict()
+    .locale('en') // so that yargs generated text is in english, just like the other text
     .command('init', 'Create an initial configuration file for lowsync with sensible defaults.', yargs => yargs.demandCommand(0, 0))
     .command('settings', 'Display or modify settings of the neonious one.', yargs => {
         return yargs
