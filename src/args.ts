@@ -70,6 +70,14 @@ export function jsonParse(str: string) {
 const argv = yargs
     .strict()
     .locale('en') // so that yargs generated text is in english, just like the other text
+    .command(['[sync]', '$0'], 'Sync and, by default, transpile the files from this computer to the neonious one.', yargs => {
+        return yargs
+            .option('no-transpile', {
+                type: 'boolean',
+                default: undefined,
+                describe: 'Disable the transpilation of source files (only >=ES6 JavaScript files, NO TypeScript, etc.) to ES5. Be sure that you know what you are doing before using this option!'
+            }).demandCommand(0, 0)
+    })
     .command('init', 'Create an initial configuration file for lowsync with sensible defaults.', yargs => yargs.demandCommand(0, 0))
     .command('settings', 'Display or modify settings of the neonious one.', yargs => {
         return yargs
@@ -138,7 +146,6 @@ const argv = yargs
             .example('$0 settings show', 'Shows all settings and their corresponding values.')
             .example('$0 settings set example.setting="an example"', 'Sets the setting "example.setting" to "an example".')
     })
-    .command('status', 'Print the status of the program on the neonious one.', yargs => yargs.demandCommand(0, 0))
     .command('start [file]', 'Start the program on the neonious one.', yargs => {
         return yargs
             .positional('file', {
@@ -154,14 +161,7 @@ const argv = yargs
             .example('$0 start "/src/an example.js" --force', '(Re)Starts "/src/an example.js" on the neonious one, even if a program is currently running.').demandCommand(0, 0)
     })
     .command('stop', 'Stop the program on the neonious one.', yargs => yargs.demandCommand(0, 0))
-    .command(['sync', '$0'], 'Sync and, by default, transpile the files from this computer to the neonious one.', yargs => {
-        return yargs
-            .option('no-transpile', {
-                type: 'boolean',
-                default: undefined,
-                describe: 'Disable the transpilation of source files (only >=ES6 JavaScript files, NO TypeScript, etc.) to ES5. Be sure that you know what you are doing before using this option!'
-            }).demandCommand(0, 0)
-    })
+    .command('status', 'Print the status of the program on the neonious one.', yargs => yargs.demandCommand(0, 0))
     .command('monitor', 'Show the output of the running program (process.stdout) and enable interaction with standard input (process.stdin).', yargs => yargs.demandCommand(0, 0))
     .command('update', 'Display available updates for the neonious one and/or install them.', yargs => {
         return yargs
