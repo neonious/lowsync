@@ -3,6 +3,7 @@ const CleanWebpackPlugin = require('clean-webpack-plugin');
 const fs = require('fs');
 const keysTransformer = require('./common/node_modules/ts-transformer-keys/transformer').default;
 const webpack = require('webpack');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 const nodeModules = {};
 fs.readdirSync(path.resolve(__dirname, 'node_modules'))
@@ -71,6 +72,21 @@ module.exports = (env, options) => {
                 banner:"require('source-map-support').install();",
                 raw: true
             }),
+            new CopyWebpackPlugin([
+                {
+                    context:'./esptool',
+                    from:'*.py',
+                    to:path.join(__dirname,outDir,'esptool')
+                },{
+                    context:'./esptool',
+                    from:'ecdsa', 
+                    to:path.join(__dirname,outDir,'esptool','ecdsa')
+                },{
+                    context:'./esptool',
+                    from:'pyaes',
+                    to:path.join(__dirname,outDir,'esptool','pyaes')
+                }
+            ]),
             new webpack.BannerPlugin({
                 banner: '#!/usr/bin/env node',
                 raw: true

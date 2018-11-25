@@ -212,7 +212,7 @@ export class SyncCommand extends Command {
               value: 'abort'
             },
             {
-              name: 'Discard sync history and do an initial sync. This will ask you how to resolve all cases where local and remote file/folders are in conflict. NO existing files or folders will be automatically overridden.',
+              name: 'Discard sync history and do an initial sync. This will ask you how to proceed where files exist both locally and remotely and differ. NO existing files or folders will be automatically overridden.',
               value: 'initial_sync'
             }
           ]

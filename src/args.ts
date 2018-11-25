@@ -41,12 +41,18 @@ export interface MonitorOptions {
     type: 'monitor'
 }
 
+export interface FlashOptions {
+    type: 'flash',
+    port:number;
+    params:string[]
+}
+
 export interface UpdateOptions {
     type: 'update',
     action: 'show' | 'install';
 }
 
-export type Options = InitOptions | SettingsOptions | StatusOptions | StartOptions | StopOptions | SyncOptions | MonitorOptions | UpdateOptions;
+export type Options = InitOptions | SettingsOptions | StatusOptions | StartOptions | StopOptions | SyncOptions | MonitorOptions |FlashOptions| UpdateOptions;
 
 function throwErrrorsIfExist(results: { setting: string; msg: string; }[]) {
     if (results.length) {
@@ -163,7 +169,20 @@ const argv = yargs
     .command('stop', 'Stop the program on the microcontroller.', yargs => yargs.demandCommand(0, 0))
     .command('status', 'Print the status of the program on the microcontroller.', yargs => yargs.demandCommand(0, 0))
     .command('monitor', 'Show the output of the running program (process.stdout).', yargs => yargs.demandCommand(0, 0))
-    .command('flash <port> [params..]','Flash low.js to generic ESP32-WROVER microcontroller board.')
+    .command('flash <port> [params..]','Flash low.js to generic ESP32-WROVER microcontroller board. For experts, also parameters of esptool are supported (see https://github.com/espressif/esptool for more information).',yargs=>{
+        return yargs.positional('port',{
+            type:'number',
+            describe:'The serial port which the USB/serial chip of the ESP32 board creates. Under Windows this usually starts with "COM", on other systems with "/dev/tty".'
+        }).option('init',{
+            type:'boolean',
+            default:false,
+            describe:'Resets to factory settings by erasing flash. Use this on first flashing.'
+        }).option('reset-network',{
+            type:'boolean',
+            default:false,
+            describe:'Resets network settings to Wifi access point and outputs the credentials to connect.'
+        }).demandCommand(0, 0)
+    })
     .command('update', 'Display available updates for the neonious one and/or install them.', yargs => {
         return yargs
             .command('show', 'Display available updates, if any.')
@@ -203,7 +222,10 @@ export function parseArguments(): Options {
             const { noTranspile } = argv;
             return { type: 'sync', noTranspile }
         case 'monitor':
-            return { type: 'monitor' }
+            return { type: 'monitor' };
+        case 'flash':
+            const { port, params } = argv;
+            return { type: 'flash',port,params:params||[] };
         case 'update':
             const action = argv._[1] as any;
             return { type: 'update', action }
