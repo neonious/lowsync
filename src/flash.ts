@@ -4,14 +4,9 @@ import { spawn } from 'child_process';
 import * as https from 'https';
 import * as cliProgress from 'cli-progress';
 import { RunError } from './runError';
-
-const PATH_ESPTOOL = __dirname + '/esptool/esptool.py';
-
-// Example call
-// flash(require('fs').readFileSync(os.homedir() + '/.neonious/esp_port', 'utf8').trim(), ['--reset-network']);
+import * as path from 'path';
 
 export async function flash(port: string, params: string[]) {
-
   let doneErasing = false;
   let length: number | undefined;
   let downloaded = 0;
@@ -90,7 +85,9 @@ export async function flash(port: string, params: string[]) {
   ) {
     return new Promise<unknown>((resolve, reject) => {
       if (typeof cmd == 'string') cmd = [cmd];
-      const flasher = spawn(PATH_ESPTOOL, params.concat(cmd));
+      const flasher = spawn('python', ['esptool.py', ...params, ...cmd], {
+        cwd: path.join(__dirname, 'esptool')
+      });
 
       let txt = '';
       flasher.stdout.on('data', data => {
@@ -123,7 +120,9 @@ export async function flash(port: string, params: string[]) {
         } else {
           if (code)
             reject(
-              new RunError('esptool exited with exit code ' + code + '. Exiting.')
+              new RunError(
+                'esptool exited with exit code ' + code + '. Exiting.'
+              )
             );
           else resolve();
         }
