@@ -74,11 +74,11 @@ module.exports = (env, options) => {
             }),
             new CopyWebpackPlugin([
                 {
-                    context:'./esptool',
+                    context:path.join(__dirname,'esptool'),
                     from:'*.py',
                     to:path.join(__dirname,outDir,'esptool')
                 },{
-                    context:'./esptool',
+                    context:path.join(__dirname,'esptool'),
                     from:'ecdsa', 
                     to:path.join(__dirname,outDir,'esptool','ecdsa')
                 },{
