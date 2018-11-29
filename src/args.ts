@@ -294,7 +294,6 @@ const argv1 = yargs
     process.exit(1);
   }) as any);
 
-console.log(process.argv);
 const flashidx = process.argv.indexOf('flash');
 const other: string[] = [];
 let argv: Arguments;
