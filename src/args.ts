@@ -257,7 +257,7 @@ const argv1 = yargs
     yargs => {
       return yargs
         .positional('port', {
-          type: 'number',
+          type: 'string',
           describe:
             'The serial port which the USB/serial chip of the ESP32 board creates. Under Windows this usually starts with "COM", on other systems with "/dev/tty".'
         })
