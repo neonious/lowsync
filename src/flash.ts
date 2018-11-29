@@ -10,7 +10,7 @@ const PATH_ESPTOOL = './esptool/esptool.py';
 // Example call
 // flash(require('fs').readFileSync(os.homedir() + '/.neonious/esp_port', 'utf8').trim(), ['--reset-network']);
 
-export async function flash(port: number, params: string[]) {
+export async function flash(port: string, params: string[]) {
   let doneErasing = false;
   let length: number | undefined;
   let downloaded = 0;

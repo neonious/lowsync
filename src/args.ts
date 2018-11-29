@@ -43,7 +43,7 @@ export interface MonitorOptions {
 
 export interface FlashOptions {
   type: 'flash';
-  port: number;
+  port: string;
   params: string[];
 }
 
