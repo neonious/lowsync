@@ -5,12 +5,16 @@ import * as https from 'https';
 import * as cliProgress from 'cli-progress';
 import { RunError } from './runError';
 
-const PATH_ESPTOOL = './esptool/esptool.py';
+const PATH_ESPTOOL = __dirname + '/esptool/esptool.py';
 
 // Example call
 // flash(require('fs').readFileSync(os.homedir() + '/.neonious/esp_port', 'utf8').trim(), ['--reset-network']);
 
 export async function flash(port: number, params: string[]) {
+
+console.log('port: ', port);
+console.log('params: ', JSON.stringify(params, null, 2));
+
   let doneErasing = false;
   let length: number | undefined;
   let downloaded = 0;
