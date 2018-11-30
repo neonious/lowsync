@@ -70,8 +70,8 @@ export class Program {
       await this.authenticationService.tryLogin(password);
       try {
         await command.run();
-      } finally {
-        if (command.command !== 'update')
+      } finally { 
+        if (command.command !== 'update' && command.command !=='monitor')
           // todo because update also logs out (UpdateAndLogout api method)
           await this.authenticationService.logout();
       }
