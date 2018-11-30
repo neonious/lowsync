@@ -8,7 +8,7 @@ import {
 import { join } from 'path';
 import fs = require('fs-extra');
 import { ipAddress } from '@common/src/common/regexConst';
-import { isPlainObject } from 'lodash';
+import { isPlainObject, mapValues } from 'lodash';
 import * as path from 'path';
 import inquirer = require('inquirer');
 import { Questions, Question } from 'inquirer';
@@ -29,49 +29,71 @@ export interface CommandConfig {
   exclude?: string[];
 }
 
-type PromptType = 'string' | 'confirm';
+type PromptType = 'string' | 'confirm' | 'password'; // todo richtig? (nicht input statt string?) und auch prompt options alle richtig?
 
 interface PropMeta {
-  default?: unknown;
   validate: (value: unknown) => string | undefined;
+  default?: unknown;
+  noInit?: boolean;
   prompt?: {
     type: PromptType;
     provideValueForQuestion: string;
+    default?: unknown;
+    saveConfigTransform?: (value: unknown) => unknown;
   };
   transformForUse?: (value: unknown) => unknown;
-  saveConfigTransform?: (value: unknown) => unknown;
 }
 
 type PropMetas<TConfig> = { [K in keyof TConfig]-?: PropMeta };
 
 const authMeta: PropMetas<AuthConfig> = {
-  password: {}
+  password: {
+    validate: value => {
+      if (typeof value !== 'string')
+        return 'Invalid datatype. Expected a string.';
+    },
+    prompt: {
+      type: 'string',
+      provideValueForQuestion: 'What is the password for the microcontroller?'
+    }
+  }
 };
-// todo describes:
+// todo if nothing needed from config file for command then also dont require config file to exist or be valid
 const commandMeta: PropMetas<CommandConfig> = {
   syncDir: {
-    default: process.cwd(),
     validate: value => {
       if (!value) {
-        // todo also check if path valid
         return 'A value was not provided.';
       }
       if (typeof value !== 'string')
         return 'Invalid datatype. Expected a string.';
-    }, // todo ensure is valid path
-    initText: 'Local directory that you want to sync with?',
-    describe: '', // todo
-    saveConfigTransform: value =>
-      path.relative(process.cwd(), value as string) || '.',
-    transformForUse: value => '' // todo make make sure is an absolute path when read from commands,
+      try {
+        // check if path valid
+        path.resolve(value);
+      } catch {
+        return 'Invalid path format: Must be a valid relative or absolute path.';
+      }
+    },
+    prompt: {
+      type: 'password',
+      provideValueForQuestion:
+        'What is the local directory that you want to sync with?',
+      default: process.cwd(),
+      saveConfigTransform: value =>
+        path.relative(process.cwd(), value as string) || '.'
+    },
+    transformForUse: value => path.resolve(process.cwd(), value as string) // todo dont use findup for config file finding
   },
   transpile: {
-    default: true,
-    initText:
-      'Enable ES 6 (and more) via automatic Babel transpilation? (if disabled, you will have to handle this yourself!)',
     validate: value => {
       if (value !== undefined && typeof value !== 'boolean')
         return 'Invalid datatype. Expected a boolean.';
+    },
+    default: true,
+    prompt: {
+      type: 'confirm',
+      provideValueForQuestion:
+        'Enable ES 6 (and more) via automatic Babel transpilation? (if disabled, you will have to handle this yourself!)'
     }
   },
   exclude: {
@@ -89,20 +111,41 @@ const commandMeta: PropMetas<CommandConfig> = {
 };
 const remoteAccessMeta: PropMetas<RemoteAccessConfig> = {
   ip: {
-    default: '192.168.0.1',
-    validate: (value: string) => {
+    validate: value => {
+      if (typeof value !== 'string') {
+        return 'Invalid datatype. Expected a string.';
+      }
       if (!ipAddress.test(value)) {
         return 'Not a valid IP address!';
       }
     },
-    initText: 'IP address of the microcontroller on your network?'
+    prompt: {
+      type: 'string',
+      provideValueForQuestion:
+        'What is the IP address of the microcontroller on your network?',
+      default: '192.168.0.1'
+    }
   },
   port: {
-    default: 8443,
-    validate: (value: string) => {
-      if (!ipAddress.test(value)) {
-        return 'Not a valid IP address!';
+    validate: value => {
+      if (!value || isNaN(value as any)) {
+        return 'Invalid datatype. Expected a number.';
       }
+      const num = Number(value);
+      if (!Number.isInteger(num)) {
+        return 'Invalid datatype. Expected an integer.';
+      }
+      if (num < 0 || num > 65535) {
+        return 'Not a valid port number (0-65535).';
+      }
+    },
+    default: 8443,
+    noInit: true,
+    prompt: {
+      type: 'string',
+      provideValueForQuestion:
+        'What is the port of the microcontroller on your network?',
+      saveConfigTransform: value => Number(value)
     }
   }
 };
@@ -123,154 +166,255 @@ export function readConfig(): {
   throw new Error(); // todo
 }
 
-/*
-check if any unknown options exist, if yes print in orange that options unknown
-*/
 // todo gucken ob wirklich syncdir richtig abgefragt wird wenn sync
 
-interface OptsOptions<TConfig> {
+interface OptsOptions<TConfig, TConfigFile extends TConfig> {
+  config: Config<TConfigFile>;
   metas: PropMetas<TConfig>;
   askOrder: (keyof TConfig)[];
   ask?: (config: TConfig) => Promise<void>;
 }
+
 const prompt = inquirer.createPromptModule();
-class Opts<TConfig> {
-  private filename: string;
+
+class Config<TConfig> {
+  readonly filename: string;
+  private _config: any;
 
   constructor(
-    private file: string,
-    private config: Partial<TConfig>,
-    private configKeys: { [K in keyof TConfig]: boolean },
-    private opts2: OptsOptions<TConfig>
+    public readonly file: string,
+    public readonly allConfigKeys: Set<keyof TConfig>
   ) {
     this.filename = path.basename(file);
   }
 
-  unknownConfigKeyErrors(): string[] {
+  async setKey<K extends keyof TConfig>(key: K, newValue: TConfig[K]) {
+    const config = await this.getConfig();
+    config[key] = newValue;
+
+    await this.saveConfig();
+  }
+
+  async getKey(key: keyof TConfig): Promise<unknown> {
+    const config = await this.getConfig();
+    return config[key];
+  }
+
+  private async saveConfig() {
+    const json = JSON.stringify(this._config, null, 4);
+    await fs.mkdirp(path.dirname(this.file));
+    await fs.writeFile(this.file, json);
+  }
+
+  private async getConfig() {
+    if (this._config) return this._config;
+    if (!(await fs.pathExists(this.file))) {
+      return {};
+    }
+    const content = (await fs.readFile(this.file)).toString();
+    let parsed;
+    try {
+      parsed = JSON.parse(content);
+    } catch (e) {
+      if (e instanceof SyntaxError) {
+        throw new RunError(
+          `Unable to parse configuration file ${
+            this.file
+          }. Maybe it is corrupted. Check if it is in a valid JSON format or delete it and run lowsync --init to create a new one.`
+        );
+      }
+      throw e;
+    }
+    if (!isPlainObject(parsed)) {
+      throw new RunError(
+        `Unable to parse configuration file ${
+          this.file
+        }. The file must contain a javascript object ({...}). You may want to delete it and run lowsync --init to create a new one.`
+      );
+    }
+    this._config = parsed;
+    return parsed;
+  }
+}
+
+class Opts<TConfig, TConfigFile extends TConfig> {
+  private config: Config<TConfig>;
+  private metas: PropMetas<TConfig>;
+  private askOrder: (keyof TConfig)[];
+  private ask?: (config: TConfig) => Promise<void>; // todo run this
+
+  constructor({
+    config,
+    metas,
+    askOrder,
+    ask
+  }: OptsOptions<TConfig, TConfigFile>) {
+    this.config = config;
+    this.metas = metas;
+    this.askOrder = askOrder;
+    this.ask = ask;
+  }
+
+  getErrors(keys?: (keyof TConfig)[]): string[] {
     const errors = [];
-    for (const key of Object.keys(this.config)) {
-      if (!(key in this.configKeys)) {
-        errors.push(`Unknown setting in ${this.filename}: "${key}".`);
+    const requestKeys = new Set(keys || []);
+    for (const key of this.askOrder) {
+      if (requestKeys.has(key)) {
+        const { prompt: promptOpts, validate, default: _default } = this.metas[
+          key
+        ];
+        if (promptOpts) continue;
+        let currentValue = this.config.getKey(key);
+        if (currentValue !== undefined || _default === undefined) {
+          const errMsg = validate(currentValue);
+          if (errMsg) {
+            errors.push(errMsg);
+          }
+        }
       }
     }
     return errors;
   }
-
-  getErrors(keys?: (keyof TConfig)[]): string[] {
-    const result = [];
-    const allKeys = new Set(keys || []);
-    for (const key of this.opts2.askOrder) {
-      if (allKeys.has(key)) {
-        const {
-          prompt: promptOpts,
-          validate,
-        } = this.opts2.metas[key];
-        const currentValue = this.config[key];
-        const errMsg = validate(currentValue);
-        if (errMsg && !promptOpts) {
-          result.push(errMsg);
-        }
-      }
-    }
-    return result;
-  }
-
+  // todo make sure that plainobject in json files
   // todo hint about lowsync init here
   async askUser(keys?: (keyof TConfig)[]) {
-    const allKeys = new Set(keys || []);
-    for (const key of this.opts2.askOrder) {
-      if (allKeys.has(key)) {
-        const {
-          prompt: promptOpts,
-          validate,
-          default: _default,
-          saveConfigTransform
-        } = this.opts2.metas[key];
-        const currentValue = this.config[key];
+    const requestKeys = new Set(keys || []);
+    for (const key of this.askOrder) {
+      if (requestKeys.has(key)) {
+        const { prompt: promptOpts, validate, default: _default } = this.metas[
+          key
+        ];
+        const currentValue = this.config.getKey(key);
+        if (currentValue === undefined && _default !== undefined) continue;
         if (!promptOpts) {
           // was already handled in getErrors
           continue;
         }
         const errMsg = validate(currentValue);
         if (errMsg) {
-          const { type, provideValueForQuestion } = promptOpts;
+          const {
+            type,
+            provideValueForQuestion,
+            default: promptDefault,
+            saveConfigTransform
+          } = promptOpts;
           let { newValue } = await prompt<{ newValue: unknown }>({
             name: 'newValue',
             type,
             message: `An invalid value was found in ${
-              this.filename
+              this.config.filename
             } for "${key}". ${errMsg}. ${provideValueForQuestion}`,
-            default: _default,
+            default: promptDefault || _default, // todo _default tostring if input or password
             validate: value => validate(value) || true
           });
           if (saveConfigTransform) {
             newValue = saveConfigTransform(newValue);
           }
-          this.config[key] = newValue as any;
-          // todo write to file
+
+          this.config.setKey(key, newValue as any);
         }
       }
     }
   }
 
-  opts(): TConfig {
-    throw new Error();
-    // todo
+  getConfig(keys?: (keyof TConfig)[]): TConfig {
+    const result = {} as TConfig;
+    const requestKeys = keys || [];
+    for (const key of requestKeys) {
+      let value = this.config.getKey(key);
+      const { transformForUse, default: _default } = this.metas[key];
+      if (value === undefined && _default !== undefined) {
+        value = _default as any;
+      }
+      if (transformForUse) {
+        value = transformForUse(value) as any;
+      }
+      if (value !== undefined) result[key] = value as any;
+    }
+    return result;
   }
 }
 
-// todo:
+class CommandConfigOpts extends Opts<CommandConfig, TheConfig> {
+  constructor(config: ConfigFile) {
+    super({
+      config,
+      metas: commandMeta, // later make sure all of askorder is in config keys
+      askOrder: ['syncDir', 'transpile']
+    });
+  }
+}
+
+type TheConfig = CommandConfig & RemoteAccessConfig;
+
+class ConfigFile extends Config<TheConfig> {}
+
+class AuthConfigFile extends Config<AuthConfig> {}
+
+class AuthOpts extends Opts<AuthConfig, AuthConfig> {
+  constructor(config: AuthConfigFile) {
+    super({
+      config,
+      metas: authMeta,
+      askOrder: ['password'],
+      ask: async ({ password }) => {
+        const ok = await this.authenticationService.tryLogin(password);
+        if (ok) {
+          await this.authenticationService.logout();
+        } else {
+          throw new RunError(''); // todo msg
+        }
+      }
+    });
+  }
+}
+
+class RemoteAccessOpts extends Opts<RemoteAccessConfig, TheConfig> {
+  constructor(config: ConfigFile) {
+    super({
+      config,
+      metas: remoteAccessMeta,
+      askOrder: ['ip', 'port'],
+      ask: async ({ port, ip }) => {
+        const connectionOk = await request({
+          method: 'POST',
+          agent: httpsPool,
+          uri: `https://${ip}:${port}/api/Login`,
+          headers: { 'Content-Type': 'application/json;charset=UTF-8' },
+          timeout: 30_000,
+          body: JSON.stringify({ password: Date.now().toString() })
+        })
+          .then(() => {
+            return true;
+          })
+          .catch(() => {
+            return false;
+          });
+        if (!connectionOk) {
+          throw new RunError(
+            `The device cannot be reached under the provided IP and port (${ip}:${port}). (network problem, or wrong IP). Please correct the problem in your configuration or delete it and run lowsync --init`
+          );
+        }
+
+        // todo setHostPrefix(`https://${ip}:${port}`);
+      }
+    });
+  }
+}
 
 //
 // // todo ask for password and port in lowsync init
-// class AuthConfig2 extends Opts<AuthConfig> {
-//   constructor(config: AuthConfig) {
-//     // todo null as any
-//     super(config, null as any, {
-//       ask: async ({ password }) => {
-//         const ok = await this.authenticationService.tryLogin(password);
-//         if (ok) {
-//           await this.authenticationService.logout();
-//         } else {
-//           return {
-//             fail: '', // todo msg
-//             askAgain: ['password']
-//           };
-//         }
-//       }
-//     });
+
+// unknownConfigKeyErrors(): string[] {
+//   const errors = [];
+//   for (const key of Object.keys(this.config) as (keyof TConfig)[]) {
+//     if (!this.opts.configKeys.has(key)) {
+//       errors.push(
+//         `An unknown setting "${key}" was found in ${
+//           this.filename
+//         }. Please remove or correct that setting.`
+//       );
+//     }
 //   }
-// }
-
-// class RemoteAccessConfig2 extends Opts<RemoteAccessConfig> {
-//   constructor(config: RemoteAccessConfig) {
-//     // todo null as any
-//     super(config, null as any, {
-//       ask: async ({ port, ip }) => {
-//         const connectionOk = await request({
-//           method: 'POST',
-//           agent: httpsPool,
-//           uri: `https://${ip}:${port}/api/Login`,
-//           headers: { 'Content-Type': 'application/json;charset=UTF-8' },
-//           timeout: 30_000,
-//           body: JSON.stringify({ password: Date.now().toString() })
-//         })
-//           .then(() => {
-//             return true;
-//           })
-//           .catch(() => {
-//             return false;
-//           });
-//         if (!connectionOk) {
-//           return {
-//             fail: `The device cannot be reached under the provided IP and port (${ip}:${port}). (network problem, or wrong IP).`,
-//             askAgain: ['ip', 'port']
-//           };
-//         }
-
-//         // todo setHostPrefix(`https://${ip}:${port}`);
-//       }
-//     });
-//   }
-
+//   return errors;
 // }
