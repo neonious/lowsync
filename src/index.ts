@@ -5,8 +5,6 @@ import { LOWTYPES } from "./ioc/types";
 import { Program } from './program';
 import { RunError } from "./runError";
 
-process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
-
 process.on('unhandledRejection', (reason, p) => {
     console.error(chalk.white.bgRed('Unhandled Rejection at: Promise' + p, 'reason:', reason)); 
 });
