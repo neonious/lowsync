@@ -15,6 +15,7 @@ import { SettingsKey } from '@common/src/settings/definitions';
 @injectable()
 export class SettingsCommand extends Command {
     readonly requestConfig = {};
+    readonly usingNoRemoteApis = false;
 
     constructor(
         @inject(LOWTYPES.Options) private options: SettingsOptions,

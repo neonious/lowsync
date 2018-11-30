@@ -6,7 +6,6 @@ import { inject, injectable } from 'inversify';
 import { cloneDeep } from 'lodash';
 import * as path from 'path';
 import { SyncOptions } from '../../args';
-import { configFileName } from '../../config';
 import { LOWTYPES } from '../../ioc/types';
 import { RunError } from '../../runError';
 import { Command } from '../command';
@@ -41,6 +40,7 @@ const prompt = inquirer.createPromptModule();
 @injectable()
 export class SyncCommand extends Command<'syncDir' | 'transpile' | 'exclude'> {
   readonly requestConfig = { syncDir: true, transpile: true, exclude: true };
+  readonly usingNoRemoteApis = false;
 
   private get exclude() {
     return [

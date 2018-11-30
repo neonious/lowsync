@@ -26,7 +26,8 @@ const prompt = inquirer.createPromptModule();
 @injectable()
 export class StartCommand extends Command {
   readonly requestConfig = {};
-
+  readonly usingNoRemoteApis = false;
+  
   constructor(
     @inject(LOWTYPES.Options) private options: StartOptions,
     @inject(TYPES.HttpApiService) private httpApiService: HttpApiService

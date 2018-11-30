@@ -7,6 +7,7 @@ import { flash } from '../../flash';
 @injectable()
 export class FlashCommand extends Command {
   readonly requestConfig = {};
+  readonly usingNoRemoteApis = true;
   
   constructor(@inject(LOWTYPES.Options) private options: FlashOptions) {
     super('flash');

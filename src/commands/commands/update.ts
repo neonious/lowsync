@@ -19,6 +19,7 @@ const prompt = inquirer.createPromptModule();
 @injectable()
 export class UpdateCommand extends Command<never> {
     readonly requestConfig={};
+    readonly usingNoRemoteApis = false;
 
     constructor(
         @inject(LOWTYPES.Options) private options: UpdateOptions,

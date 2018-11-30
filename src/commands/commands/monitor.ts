@@ -18,6 +18,7 @@ import { ConsoleMessage } from '@common/src/services/consoleMessage/message';
 @injectable()
 export class MonitorCommand extends Command {
     readonly requestConfig = {};
+    readonly usingNoRemoteApis = false;
 
     constructor(
         @inject(TYPES.ConsoleMessages) private consoleMessages: ConsoleMessages,

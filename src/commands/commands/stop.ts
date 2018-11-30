@@ -9,6 +9,7 @@ import replaceExt = require('replace-ext');
 @injectable()
 export class StopCommand extends Command {
     readonly requestConfig = {};
+    readonly usingNoRemoteApis = false;
 
     constructor(
         @inject(TYPES.HttpApiService) private httpApiService: HttpApiService

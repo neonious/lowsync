@@ -6,6 +6,7 @@ import { Command } from '../command';
 @injectable()
 export class StatusCommand extends Command {
   readonly requestConfig = {};
+  readonly usingNoRemoteApis = false;
 
   constructor(
     @inject(TYPES.HttpApiService) private httpApiService: HttpApiService
