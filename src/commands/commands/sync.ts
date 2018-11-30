@@ -6,7 +6,7 @@ import { inject, injectable } from 'inversify';
 import { cloneDeep } from 'lodash';
 import * as path from 'path';
 import { SyncOptions } from '../../args';
-import { getConfigPath, configFileName } from '../../config';
+import { configFileName } from '../../config';
 import { LOWTYPES } from '../../ioc/types';
 import { RunError } from '../../runError';
 import { Command } from '../command';
@@ -39,23 +39,8 @@ import { relative, join } from 'path';
 const prompt = inquirer.createPromptModule();
 
 @injectable()
-export class SyncCommand extends Command {
-  private get syncDir(): string {
-    try {
-      const value = this.config.syncDir;
-      if (!path.isAbsolute(value)) {
-        return path.resolve(path.dirname(getConfigPath()), value);
-      }
-      return value;
-    } catch (e) {
-      throw new RunError(
-        `Cannot resolve sync directory '${
-          this.config.syncDir
-        }' to a valid path.`,
-        e
-      );
-    }
-  }
+export class SyncCommand extends Command<'syncDir' | 'transpile' | 'exclude'> {
+  readonly requestConfig = { syncDir: true, transpile: true, exclude: true };
 
   private get exclude() {
     return [
@@ -74,9 +59,7 @@ export class SyncCommand extends Command {
     @inject(TYPES.HostPrefixHandler)
     private hostPrefixHandler: HostPrefixHandler
   ) {
-    super('sync', {
-      requestConfig: ['syncDir', 'transpile', 'exclude']
-    });
+    super('sync');
   }
 
   private get syncFilePath(): string {
@@ -117,17 +100,17 @@ export class SyncCommand extends Command {
   }
 
   private async prepareSyncFolder() {
-    if (!(await fs.pathExists(this.syncDir))) {
-      await fs.mkdirp(this.syncDir);
+    if (!(await fs.pathExists(this.config.syncDir))) {
+      await fs.mkdirp(this.config.syncDir);
       console.log(
-        `Created directory '${this.syncDir}' because it does not exist yet.`
+        `Created directory '${this.config.syncDir}' because it does not exist yet.`
       );
     } else {
-      const stat = await fs.stat(this.syncDir);
+      const stat = await fs.stat(this.config.syncDir);
       if (!stat.isDirectory()) {
         throw new RunError(
           `Cannot synchonize with directory '${
-            this.syncDir
+            this.config.syncDir
           }' because a file exists in the same location.`
         );
       }
@@ -145,41 +128,24 @@ export class SyncCommand extends Command {
   }
 
   async run() {
-    if (!this.rawConfig.syncDir){
-        const { newSyncDir } = await prompt<{newSyncDir:string}>({
-          name: 'newSyncDir',
-          type: 'string',
-          message: 'The sync directory is unknown. What is the local directory that you want to sync with?',
-          default: process.cwd(),
-          validate: (value: string) => {
-              if (!value) {
-                  return 'Empty input!';
-              }
-              return true;
-          }
-      });
-      const syncDir=relative(process.cwd(),newSyncDir)||'.';
-      this.rawConfig.syncDir=syncDir;
-      const json = JSON.stringify(this.rawConfig, null, 4);
-      const configPath = join(process.cwd(), configFileName);
-      await fs.writeFile(configPath, json, { encoding: 'utf8' });
-    }
+    const {
+      code: { status }
+    } = await this.httpApiService.Status({ code: true });
 
-    const { code: { status } } = await this.httpApiService.Status({ code: true });
-
-    let startAfterSync=false;
-    if (status!=='stopped'){
-      const { restart } = await prompt<{restart:boolean}>({
+    let startAfterSync = false;
+    if (status !== 'stopped') {
+      const { restart } = await prompt<{ restart: boolean }>({
         name: 'restart',
         type: 'confirm',
-        message: 'The user application is currently running (or paused). Stop before and restart after sync?',
-        default: true,
+        message:
+          'The user application is currently running (or paused). Stop before and restart after sync?',
+        default: true
       });
-      if (restart){
-        startAfterSync=true;
-        console.log('Stopping program...')
+      if (restart) {
+        startAfterSync = true;
+        console.log('Stopping program...');
         await this.httpApiService.Stop();
-        console.log('Syncing...')
+        console.log('Syncing...');
       }
     }
 
@@ -188,23 +154,24 @@ export class SyncCommand extends Command {
     console.log('Fetching file system listings...');
 
     const localFiles = await getLocalFiles({
-      rootDir: this.syncDir,
+      rootDir: this.config.syncDir,
       excludeGlobs: this.exclude
     });
     const localFileStruct = toStructure(localFiles);
 
-    const {stats:remoteFiles,hadPut} = await getRemoteFiles({
+    const { stats: remoteFiles, hadPut } = await getRemoteFiles({
       excludeGlobs: this.exclude,
       httpService: this.httpService,
       hostPrefixHandler: this.hostPrefixHandler
     });
     if (!hadPut) {
       const syncFileExists = await fs.pathExists(this.syncFilePath);
-      if (localFiles.length && syncFileExists){
-        const { action } = await prompt<{action:'abort'|'initial_sync'}>({
+      if (localFiles.length && syncFileExists) {
+        const { action } = await prompt<{ action: 'abort' | 'initial_sync' }>({
           name: 'action',
           type: 'list',
-          message: 'The filesystem of the microcontroller has not been synced before. What would you like to do?',
+          message:
+            'The filesystem of the microcontroller has not been synced before. What would you like to do?',
           default: 'abort',
           choices: [
             {
@@ -212,18 +179,19 @@ export class SyncCommand extends Command {
               value: 'abort'
             },
             {
-              name: 'Discard sync history and do an initial sync. This will ask you how to proceed where files exist both locally and remotely and differ. NO existing files or folders will be automatically overridden.',
+              name:
+                'Discard sync history and do an initial sync. This will ask you how to proceed where files exist both locally and remotely and differ. NO existing files or folders will be automatically overridden.',
               value: 'initial_sync'
             }
           ]
-        });  
+        });
 
-        if (action === 'abort'){
+        if (action === 'abort') {
           return;
         }
       }
 
-      if (syncFileExists){
+      if (syncFileExists) {
         await fs.unlink(this.syncFilePath);
       }
     }
@@ -262,7 +230,7 @@ export class SyncCommand extends Command {
       });
 
       const synchronizer = getFileSynchronizer(
-        this.syncDir,
+        this.config.syncDir,
         this.webdavService,
         !this.doTranspile
       );
@@ -289,12 +257,12 @@ export class SyncCommand extends Command {
       console.log(`${direction}: -File/Folder ${relPath}`);
     }
 
-    if (startAfterSync){
-      console.log('Starting program again...')
+    if (startAfterSync) {
+      console.log('Starting program again...');
       let result = await this.httpApiService.Start({ action: 'start' });
-      if (result==='FILE_NOT_FOUND'){
+      if (result === 'FILE_NOT_FOUND') {
         throw new RunError(`The file to start does not exist.`);
-      }else if (result){
+      } else if (result) {
         throw new RunError('Could not start program: ' + result);
       }
     }

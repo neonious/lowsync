@@ -1,7 +1,6 @@
 import { inject, injectable } from 'inversify';
 import { mapKeys, mapValues, maxBy, pickBy, chain } from 'lodash';
 import { pad } from 'underscore.string';
-
 import { SettingsOptions, jsonParse } from '../../args';
 import { LOWTYPES } from '../../ioc/types';
 import { RunError } from '../../runError';
@@ -15,6 +14,7 @@ import { SettingsKey } from '@common/src/settings/definitions';
 
 @injectable()
 export class SettingsCommand extends Command {
+    readonly requestConfig = {};
 
     constructor(
         @inject(LOWTYPES.Options) private options: SettingsOptions,

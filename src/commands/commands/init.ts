@@ -4,7 +4,7 @@ import { spawn } from 'child_process';
 import { injectable } from 'inversify';
 import { extname, join, relative } from 'path';
 import { isUndefined } from 'util';
-import { configFileName, RawConfig } from '../../config';
+import { configFileName, CommandConfig} from '../../config';
 import { RunError } from '../../runError';
 import { Command } from '../command';
 import inquirer = require('inquirer');
@@ -14,6 +14,7 @@ const prompt = inquirer.createPromptModule();
 
 @injectable()
 export class InitCommand extends Command {
+    readonly requestConfig = {};
 
     readonly command = 'init';
     readonly noLogin = true;
@@ -76,45 +77,5 @@ export class InitCommand extends Command {
                 spawn(args[0],args.slice(1),{stdio:'inherit'})
             }
         }
-    }
-
-    private async askConfig(config: RawConfig) {
-        const { syncDir, ip, transpile } = config;
-
-        const { newIp } = await prompt({
-            name: 'newIp',
-            type: 'string',
-            message: 'IP address of the microcontroller on your network?',
-            default: ip || '192.168.0.1',
-            validate: (value: string) => {
-                if (!ipAddress.test(value)) { 
-                    return 'Not a valid IP address!';
-                }
-                return true;
-            }
-        }) as any;
-        config.ip = newIp;
-
-        const { newSyncDir } = await prompt({
-            name: 'newSyncDir',
-            type: 'string',
-            message: 'Local directory that you want to sync with?',
-            default: syncDir || process.cwd(),
-            validate: (value: string) => {
-                if (!value) {
-                    return 'Empty input!';
-                }
-                return true;
-            }
-        }) as any;
-        config.syncDir = relative(process.cwd(),newSyncDir)||'.';
-
-        const { newTranspile } = await prompt({
-            name: 'newTranspile',
-            type: 'confirm',
-            message: 'Enable ES 6 (and more) via automatic Babel transpilation? (if disabled, you will have to handle this yourself!)',
-            default: isUndefined(transpile) ? true : transpile,
-        }) as any;
-        config.transpile = newTranspile;
     }
 }

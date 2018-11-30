@@ -1,5 +1,4 @@
 import fs = require('fs-extra');
-import { RawConfig } from '../../config';
 import inquirer = require('inquirer');
 import { InitOptions, StatusOptions, StartOptions, UpdateOptions } from '../../args';
 import { isUndefined } from 'util';
@@ -18,7 +17,8 @@ import { Status } from '@common/src/clientServerApi/webSocket/types/status';
 const prompt = inquirer.createPromptModule();
 
 @injectable()
-export class UpdateCommand extends Command {
+export class UpdateCommand extends Command<never> {
+    readonly requestConfig={};
 
     constructor(
         @inject(LOWTYPES.Options) private options: UpdateOptions,

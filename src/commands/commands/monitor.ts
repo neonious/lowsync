@@ -1,5 +1,4 @@
 import fs = require('fs-extra');
-import { RawConfig } from '../../config';
 import inquirer = require('inquirer');
 import { InitOptions, StatusOptions, StartOptions, UpdateOptions, StopOptions, SettingsOptions, MonitorOptions } from '../../args';
 import { isUndefined } from 'util';
@@ -18,6 +17,7 @@ import { ConsoleMessage } from '@common/src/services/consoleMessage/message';
 
 @injectable()
 export class MonitorCommand extends Command {
+    readonly requestConfig = {};
 
     constructor(
         @inject(TYPES.ConsoleMessages) private consoleMessages: ConsoleMessages,

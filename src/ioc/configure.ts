@@ -11,7 +11,6 @@ import { SyncCommand } from "../commands/commands/sync";
 import { UpdateCommand } from "../commands/commands/update";
 import { Program } from "../program";
 import { parseArguments, Options } from "../args";
-import { getRawConfig, Config, RawConfig } from "../config";
 import { FlashCommand } from "../commands/commands/flash";
 
 export async function configureContainerLowSync(container: Container) {
@@ -28,6 +27,4 @@ export async function configureContainerLowSync(container: Container) {
     container.bind<Program>(LOWTYPES.Program).to(Program);
 
     container.bind<Options>(LOWTYPES.Options).toConstantValue(parseArguments());
-
-    container.bind<RawConfig>(LOWTYPES.RawConfig).toConstantValue(await getRawConfig());
 }
