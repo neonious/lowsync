@@ -15,7 +15,7 @@ import { httpsPool } from '../common/src/services/http/handler/node';
 import * as request from 'request-promise-native';
 import { AuthenticationService } from '../common/src/services/authentication/authentication';
 import { TYPES } from '../common/src/types';
-import { inject, injectable, multiInject } from 'inversify';
+import { inject, injectable, multiInject, unmanaged } from 'inversify';
 import { setHostPrefix } from './indexUtil';
 import { LOWTYPES } from './ioc/types';
 
@@ -36,6 +36,7 @@ export interface CommandConfig {
 type PromptType = 'input' | 'confirm' | 'password';
 
 interface PropMeta {
+  required?: boolean;
   validate: (value: unknown) => string | undefined;
   default?: unknown;
   noInit?: boolean;
@@ -60,7 +61,7 @@ interface OptsOptions<TConfig, TConfigFile extends TConfig> {
 }
 
 const prompt = inquirer.createPromptModule();
-
+@injectable()
 class Config<TConfig> {
   private _config: any;
 
@@ -73,9 +74,23 @@ class Config<TConfig> {
   }
 
   constructor(
-    private _file: string,
-    public readonly allConfigKeys: Set<keyof TConfig>
+    @unmanaged() private _file: string,
+    @unmanaged() public readonly allConfigKeys: Set<keyof TConfig>
   ) {}
+
+  async unknownConfigKeyErrors() {
+    const errors = [];
+    for (const key of await this.getExistingKeys()) {
+      if (!this.allConfigKeys.has(key)) {
+        errors.push(
+          `An unknown setting "${key}" was found in ${
+            this.filename
+          }. Please remove or correct that setting.`
+        );
+      }
+    }
+    return errors;
+  }
 
   async moveTo(newFile: string) {
     await fs.mkdirp(path.dirname(newFile));
@@ -113,7 +128,8 @@ class Config<TConfig> {
   async getConfig(emptyObjectOnError?: boolean) {
     if (this._config) return this._config;
     if (!(await fs.pathExists(this.file))) {
-      return {};
+      this._config = {};
+      return this._config;
     }
     const content = (await fs.readFile(this.file)).toString();
     let parsed;
@@ -142,14 +158,15 @@ class Config<TConfig> {
     return parsed;
   }
 }
-
+@injectable()
 class Opts<TConfig, TConfigFile extends TConfig> {
   private config: Config<TConfigFile>;
   readonly metas: PropMetas<TConfig>;
   readonly askOrder: (keyof TConfig)[];
   readonly ask?: (config: TConfig) => Promise<void>;
 
-  constructor({
+  constructor(@unmanaged()
+  {
     config,
     metas,
     askOrder,
@@ -161,43 +178,42 @@ class Opts<TConfig, TConfigFile extends TConfig> {
     this.ask = ask;
   }
 
-  async unknownConfigKeyErrors() {
-    const errors = [];
-    for (const key of await this.config.getExistingKeys()) {
-      if (!this.config.allConfigKeys.has(key)) {
-        errors.push(
-          `An unknown setting "${key}" was found in ${
-            this.config.filename
-          }. Please remove or correct that setting.`
-        );
-      }
-    }
-    return errors;
-  }
-
   async getErrors(keys?: (keyof TConfig)[]) {
     const errors = [];
-    const requestKeys = new Set(keys || []);
+    const requestKeys = new Set(keys || this.askOrder);
     for (const key of this.askOrder) {
       if (requestKeys.has(key)) {
-        const { prompt: promptOpts, validate, default: _default } = this.metas[
-          key
-        ];
+        const {
+          required,
+          prompt: promptOpts,
+          validate,
+          default: _default
+        } = this.metas[key];
         if (promptOpts) continue;
         let currentValue = await this.config.getKey(key);
         if (currentValue !== undefined || _default === undefined) {
-          const errMsg = validate(currentValue);
-          if (errMsg) {
-            errors.push(errMsg);
+          if (currentValue === undefined && required) {
+            errors.push(
+              `No value was found in ${this.config.filename} for "${key}".`
+            );
+          } else {
+            const errMsg = validate(currentValue);
+            if (errMsg) {
+              errors.push(
+                `An invalid value was found in ${
+                  this.config.filename
+                } for "${key}". ${errMsg}`
+              );
+            }
           }
         }
       }
     }
     return errors;
   }
-
-  async init(config?: Config<TConfigFile>) {
-    config = config || this.config;
+  // todo Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable warning in new node versions
+  async init(pconfig?: Config<TConfigFile>) {
+    const config = pconfig || this.config;
     for (const key of this.askOrder) {
       const {
         prompt: promptOpts,
@@ -206,6 +222,10 @@ class Opts<TConfig, TConfigFile extends TConfig> {
         noInit
       } = this.metas[key];
       if (noInit || !promptOpts) {
+        // if pconfig here means that pconfig is a new config object since only new config objects are passed into this method
+        if (pconfig && _default !== undefined) {
+          config.setKey(key, _default as any);
+        }
         continue;
       }
       const {
@@ -231,10 +251,10 @@ class Opts<TConfig, TConfigFile extends TConfig> {
         newValue = saveConfigTransform(newValue);
       }
 
-      await this.config.setKey(key, newValue as any);
+      await config.setKey(key, newValue as any);
     }
 
-    this.ask && (await this.ask(await this.config.getConfig()));
+    this.ask && (await this.ask(await config.getConfig()));
   }
 
   private s(type: PromptType, ...vals: any[]) {
@@ -257,34 +277,49 @@ class Opts<TConfig, TConfigFile extends TConfig> {
   }
 
   async askUser(keys?: (keyof TConfig)[]) {
-    const requestKeys = new Set(keys || []);
+    const requestKeys = new Set(keys || this.askOrder);
     for (const key of this.askOrder) {
       if (requestKeys.has(key)) {
-        const { prompt: promptOpts, validate, default: _default } = this.metas[
-          key
-        ];
+        const {
+          required,
+          prompt: promptOpts,
+          validate,
+          default: _default
+        } = this.metas[key];
         const currentValue = await this.config.getKey(key);
         if (currentValue === undefined && _default !== undefined) continue;
         if (!promptOpts) {
           // was already handled in getErrors
           continue;
         }
+
+        const req = currentValue === undefined && required;
         const errMsg = validate(currentValue);
-        if (errMsg) {
+        if (req || errMsg) {
           const {
             type,
             provideValueForQuestion,
             default: promptDefault,
             saveConfigTransform
           } = promptOpts;
+          const message = req
+            ? `No value was found in ${
+                this.config.filename
+              } for "${key}". ${provideValueForQuestion}`
+            : `An invalid value was found in ${
+                this.config.filename
+              } for "${key}". ${errMsg} ${provideValueForQuestion}`;
           let { newValue } = await prompt<{ newValue: unknown }>({
             name: 'newValue',
             type,
-            message: `An invalid value was found in ${
-              this.config.filename
-            } for "${key}". ${errMsg}. ${provideValueForQuestion}`,
+            message,
             default: this.s(type, promptDefault, _default),
-            validate: value => validate(value) || true
+            validate: value => {
+              if (value === undefined && required) {
+                return 'An input is required.';
+              }
+              return validate(value) || true;
+            }
           });
           if (saveConfigTransform) {
             newValue = saveConfigTransform(newValue);
@@ -295,12 +330,12 @@ class Opts<TConfig, TConfigFile extends TConfig> {
       }
     }
 
-    this.ask && (await this.ask(await this.config.getConfig()));
+    this.ask && (await this.ask(await this.getConfig(keys)));
   }
 
   async getConfig(keys?: (keyof TConfig)[]) {
     const result = {} as TConfig;
-    const requestKeys = keys || [];
+    const requestKeys = keys || this.askOrder;
     for (const key of requestKeys) {
       let value = await this.config.getKey(key);
       const { transformForUse, default: _default } = this.metas[key];
@@ -315,6 +350,28 @@ class Opts<TConfig, TConfigFile extends TConfig> {
     return result;
   }
 }
+
+type TheConfig = CommandConfig & RemoteAccessConfig;
+@injectable()
+export class ConfigFile extends Config<TheConfig> {
+  constructor() {
+    super(
+      path.join(process.cwd(), 'lowsync.config.json'),
+      new Set(keys<TheConfig>())
+    );
+  }
+}
+
+// todo monitor todo: geht nicht!!!
+@injectable()
+export class AuthConfigFile extends Config<AuthConfig> {
+  constructor() {
+    super(
+      path.join(process.cwd(), 'lowsync.auth.config.json'),
+      new Set(keys<AuthConfig>())
+    );
+  }
+}
 @injectable()
 export class CommandConfigOpts extends Opts<CommandConfig, TheConfig> {
   constructor(@inject(LOWTYPES.ConfigFile) config: ConfigFile) {
@@ -322,6 +379,7 @@ export class CommandConfigOpts extends Opts<CommandConfig, TheConfig> {
       config,
       metas: {
         syncDir: {
+          required: true,
           validate: value => {
             if (!value) {
               return 'A value was not provided.';
@@ -336,7 +394,7 @@ export class CommandConfigOpts extends Opts<CommandConfig, TheConfig> {
             }
           },
           prompt: {
-            type: 'password',
+            type: 'input',
             provideValueForQuestion:
               'What is the local directory that you want to sync with?',
             default: process.cwd(),
@@ -370,32 +428,11 @@ export class CommandConfigOpts extends Opts<CommandConfig, TheConfig> {
           }
         }
       }, // later make sure all of askorder is in config keys
-      askOrder: ['syncDir', 'transpile']
+      askOrder: ['syncDir', 'transpile', 'exclude']
     });
   }
 }
 
-type TheConfig = CommandConfig & RemoteAccessConfig;
-@injectable()
-export class ConfigFile extends Config<TheConfig> {
-  constructor() {
-    super(
-      path.join(process.cwd(), 'lowsync.config.json'),
-      new Set(keys<TheConfig>())
-    );
-  }
-}
-
-// todo monitor todo: geht nicht!!!
-@injectable()
-export class AuthConfigFile extends Config<AuthConfig> {
-  constructor() {
-    super(
-      path.join(process.cwd(), 'lowsync.auth.config.json'),
-      new Set(keys<AuthConfig>())
-    );
-  }
-}
 @injectable()
 export class AuthOpts extends Opts<AuthConfig, AuthConfig> {
   constructor(
@@ -407,6 +444,7 @@ export class AuthOpts extends Opts<AuthConfig, AuthConfig> {
       config,
       metas: {
         password: {
+          required: true,
           validate: value => {
             if (typeof value !== 'string')
               return 'Invalid datatype. Expected a string.';
@@ -439,6 +477,7 @@ export class RemoteAccessOpts extends Opts<RemoteAccessConfig, TheConfig> {
       config,
       metas: {
         ip: {
+          required: true,
           validate: value => {
             if (typeof value !== 'string') {
               return 'Invalid datatype. Expected a string.';
@@ -455,6 +494,7 @@ export class RemoteAccessOpts extends Opts<RemoteAccessConfig, TheConfig> {
           }
         },
         port: {
+          required: true,
           validate: value => {
             if (!value || isNaN(value as any)) {
               return 'Invalid datatype. Expected a number.';

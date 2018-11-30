@@ -258,7 +258,7 @@ export class SyncCommand extends Command<'syncDir' | 'transpile' | 'exclude'> {
     }
 
     if (startAfterSync) {
-      console.log('Starting program again...');
+      console.log('Restarting program...');
       let result = await this.httpApiService.Start({ action: 'start' });
       if (result === 'FILE_NOT_FOUND') {
         throw new RunError(`The file to start does not exist.`);

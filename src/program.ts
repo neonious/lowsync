@@ -7,10 +7,13 @@ import {
   CommandConfig,
   CommandConfigOpts,
   RemoteAccessOpts,
-  AuthOpts
+  AuthOpts,
+  AuthConfigFile,
+  ConfigFile
 } from './config';
 import { LOWTYPES } from './ioc/types';
 import chalk from 'chalk';
+import { RunError } from './runError';
 
 @injectable()
 export class Program {
@@ -22,7 +25,10 @@ export class Program {
     @inject(LOWTYPES.CommandConfig) private commandConfig: CommandConfigOpts,
     @inject(LOWTYPES.AuthConfig) private authConfig: AuthOpts,
     @inject(LOWTYPES.RemoteAccessConfig)
-    private remoteAccessConfig: RemoteAccessOpts
+    private remoteAccessConfig: RemoteAccessOpts,
+    @inject(LOWTYPES.ConfigFile) private configFile: ConfigFile,
+    @inject(LOWTYPES.AuthConfigFile)
+    private authConfigFile: AuthConfigFile
   ) {}
 
   async run() {
@@ -30,33 +36,37 @@ export class Program {
     const errors = [];
     const doLogin = !command.usingNoRemoteApis;
     const unknownErrs = [];
-    unknownErrs.push(...await this.commandConfig.unknownConfigKeyErrors());
-    unknownErrs.push(...await this.remoteAccessConfig.unknownConfigKeyErrors());
-    unknownErrs.push(...await this.authConfig.unknownConfigKeyErrors());
+    unknownErrs.push(...(await this.configFile.unknownConfigKeyErrors()));
+    unknownErrs.push(
+      ...(await this.authConfigFile.unknownConfigKeyErrors())
+    );
     for (const err of unknownErrs) {
       console.warn(chalk.hex('#ffa500').bold(err));
     }
     if (doLogin) {
-      errors.push(...this.remoteAccessConfig.getErrors());
-      errors.push(...this.authConfig.getErrors());
+      errors.push(...(await this.remoteAccessConfig.getErrors()));
+      errors.push(...(await this.authConfig.getErrors()));
     }
     const configKeys = Object.keys(
       command.requestConfig || []
     ) as (keyof CommandConfig)[];
-    errors.push(...this.commandConfig.getErrors(configKeys));
+    errors.push(...(await this.commandConfig.getErrors(configKeys)));
 
     if (doLogin) {
       await this.remoteAccessConfig.askUser();
       await this.authConfig.askUser();
     }
-    // todo print errs
+    if (errors.length) {
+      const msg = errors.map(e => chalk.white.bgRed.bold(e)).join('\n');
+      throw new RunError(msg);
+    }
 
     await this.commandConfig.askUser(configKeys);
 
-    command.config = this.commandConfig.getConfig(configKeys);
+    command.config = await this.commandConfig.getConfig(configKeys);
 
     if (doLogin) {
-      const { password } = this.authConfig.getConfig();
+      const { password } = await this.authConfig.getConfig();
       await this.authenticationService.tryLogin(password);
       try {
         await command.run();
