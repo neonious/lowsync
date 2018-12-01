@@ -34,6 +34,8 @@ import {
 } from './sync/synchronize/syncFile';
 import { getFilesToSynchronize } from './sync/synchronize/getFilesToSynchronize';
 import { relative, join } from 'path';
+import * as findUp from 'find-up';
+import { getExistingOrNewConfigPath } from '../../util';
 
 const prompt = inquirer.createPromptModule();
 
@@ -57,13 +59,13 @@ export class SyncCommand extends Command<'syncDir' | 'transpile' | 'exclude'> {
     @inject(TYPES.WebdavService) private webdavService: WebdavService,
     @inject(TYPES.HttpService) private httpService: HttpService,
     @inject(TYPES.HostPrefixHandler)
-    private hostPrefixHandler: HostPrefixHandler
+    private hostPrefixHandler: HostPrefixHandler,
   ) {
     super('sync');
   }
 
   private get syncFilePath(): string {
-    return path.join(process.cwd(), 'lowsync.sync.config.json');
+    return getExistingOrNewConfigPath('lowsync.sync.config.json')
   }
 
   private async updateBase(

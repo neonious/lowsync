@@ -1,9 +1,5 @@
 import { keys } from '@common/node_modules/ts-transformer-keys';
 import { RunError } from './runError';
-import {
-  loadJsonFindFile,
-  saveJsonFindFile
-} from '@common/src/common/jsonUtil';
 import { join } from 'path';
 import fs = require('fs-extra');
 import { ipAddress } from '@common/src/common/regexConst';
@@ -18,6 +14,7 @@ import { TYPES } from '../common/src/types';
 import { inject, injectable, multiInject, unmanaged } from 'inversify';
 import { setHostPrefix } from './indexUtil';
 import { LOWTYPES } from './ioc/types';
+import { getExistingOrNewConfigPath } from './util';
 
 export interface AuthConfig {
   password: string;
@@ -211,7 +208,7 @@ class Opts<TConfig, TConfigFile extends TConfig> {
     }
     return errors;
   }
-  // todo Setting the NODE_TLS_REJECT_UNAUTHORIZED environment variable warning in new node versions
+
   async init(pconfig?: Config<TConfigFile>) {
     const config = pconfig || this.config;
     for (const key of this.askOrder) {
@@ -356,18 +353,17 @@ type TheConfig = CommandConfig & RemoteAccessConfig;
 export class ConfigFile extends Config<TheConfig> {
   constructor() {
     super(
-      path.join(process.cwd(), 'lowsync.config.json'),
+      getExistingOrNewConfigPath('lowsync.config.json'),
       new Set(keys<TheConfig>())
     );
   }
 }
 
-// todo monitor todo: geht nicht!!!
 @injectable()
 export class AuthConfigFile extends Config<AuthConfig> {
   constructor() {
     super(
-      path.join(process.cwd(), 'lowsync.auth.config.json'),
+      getExistingOrNewConfigPath('lowsync.auth.config.json'),
       new Set(keys<AuthConfig>())
     );
   }
@@ -399,10 +395,10 @@ export class CommandConfigOpts extends Opts<CommandConfig, TheConfig> {
               'What is the local directory that you want to sync with?',
             default: process.cwd(),
             saveConfigTransform: value =>
-              path.relative(process.cwd(), value as string) || '.'
+              path.relative(path.dirname(config.file), value as string) || '.'
           },
-          transformForUse: value => path.resolve(process.cwd(), value as string)
-        }, // later use findup for config file finding
+          transformForUse: value => path.resolve(path.dirname(config.file), value as string)
+        }, 
         transpile: {
           validate: value => {
             if (value !== undefined && typeof value !== 'boolean')
@@ -427,7 +423,7 @@ export class CommandConfigOpts extends Opts<CommandConfig, TheConfig> {
             }
           }
         }
-      }, // later make sure all of askorder is in config keys
+      },
       askOrder: ['syncDir', 'transpile', 'exclude']
     });
   }
