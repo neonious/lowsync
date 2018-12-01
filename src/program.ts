@@ -37,9 +37,7 @@ export class Program {
     const doLogin = !command.usingNoRemoteApis;
     const unknownErrs = [];
     unknownErrs.push(...(await this.configFile.unknownConfigKeyErrors()));
-    unknownErrs.push(
-      ...(await this.authConfigFile.unknownConfigKeyErrors())
-    );
+    unknownErrs.push(...(await this.authConfigFile.unknownConfigKeyErrors()));
     for (const err of unknownErrs) {
       console.warn(chalk.hex('#ffa500').bold(err));
     }
@@ -47,9 +45,7 @@ export class Program {
       errors.push(...(await this.remoteAccessConfig.getErrors()));
       errors.push(...(await this.authConfig.getErrors()));
     }
-    const configKeys = Object.keys(
-      command.requestConfig || []
-    ) as (keyof CommandConfig)[];
+    const configKeys = Object.keys(command.requestConfig) as (keyof CommandConfig)[];
     errors.push(...(await this.commandConfig.getErrors(configKeys)));
 
     if (doLogin) {
@@ -70,8 +66,8 @@ export class Program {
       await this.authenticationService.tryLogin(password);
       try {
         await command.run();
-      } finally { 
-        if (command.command !== 'update' && command.command !=='monitor')
+      } finally {
+        if (command.command !== 'update' && command.command !== 'monitor')
           // todo because update also logs out (UpdateAndLogout api method)
           await this.authenticationService.logout();
       }
