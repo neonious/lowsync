@@ -53,7 +53,13 @@ export async function flash(port: string, params: string[]) {
   function get_signed_data(mac: string) {
     return new Promise<Buffer>((resolve, reject) => {
       https.get(
-        `https://www.neonious.com:8443/GetFlashData?mac=${mac}`,
+        {
+          hostname:'neonious.com',
+          port:8443,
+          path:`/GetFlashData?mac=${mac}`,
+          rejectUnauthorized:false,
+          method:'GET'
+        },
         res => {
           var data: Buffer[] = [];
           setTotalLength(parseInt(res.headers['content-length']!));
