@@ -3,10 +3,39 @@ import { Argv, Arguments } from 'yargs';
 import { maxBy } from 'lodash';
 import { pad } from 'underscore.string';
 import chalk from 'chalk';
-import { RunError } from './runError';
 import { getDotKeyMapping, validateAll } from '@common/src/settings/util';
 import { SettingsKey } from '@common/src/settings/definitions';
 import { EnglishTranslations } from '@common/src/translations/en';
+
+// from https://gist.github.com/pguillory/729616
+const old_write = process.stdout.write
+
+function hook_stdout(callback:Function) {
+
+  process.stdout.write = (function(write) {
+      return function(string:string, encoding:string, fd:any) {
+          // write.apply(process.stdout, arguments)
+          callback(string, encoding, fd)
+      }
+  })(process.stdout.write)  as any
+
+  return function() {
+      process.stdout.write = old_write
+  }
+}
+
+const showSettingsKey='<category>.<key>';
+const showSettings2='a'.repeat(showSettingsKey.length);
+
+const setSettingsKey='<category>.<key>=<value>';
+const setSettings2='b'.repeat(setSettingsKey.length);
+
+const unhook = hook_stdout(function(string:string, encoding:string, fd:any) {
+  string = string
+    .replace(`[${showSettings2}..]`,`[${showSettingsKey}..]`)
+    .replace(`[${setSettings2}..]`,`[${setSettingsKey}..]`)
+  old_write.call(process.stdout, string)
+})
 
 export interface InitOptions {
   type: 'init';
@@ -111,16 +140,16 @@ const argv1 = yargs
     yargs => {
       return yargs
         .command(
-          'show [showSettings..]',
+          'show ['+showSettings2+'..]',
           'Display the values of one or multiple settings.',
           yargs => {
             return yargs
-              .positional('showSettings', {
+              .positional(showSettings2, {
                 describe:
                   'The settings you want to display the values for. Leave out to show all values.'
               })
               .check(argv => {
-                const settings = argv.showSettings;
+                const settings = argv[showSettings2];
                 const results = [];
                 const dotKeysToKey = getDotKeyMapping();
                 for (const setting of settings) {
@@ -138,16 +167,16 @@ const argv1 = yargs
           }
         )
         .command(
-          'set [setSettings..]',
+          'set ['+setSettings2+'..]',
           'Change one or multiple settings. To list possible settings, run "settings show"',
           yargs => {
             return yargs
-              .positional('setSettings', {
+              .positional(setSettings2, {
                 describe:
                   'The settings you want to change. In the form of <setting>=<value>. Enclose string values with quotes ("").'
               })
               .check(argv => {
-                const settings = argv.setSettings;
+                const settings = argv[setSettings2];
                 if (!settings.length) {
                   throw new Error('Must provide settings to set');
                 }
@@ -305,6 +334,8 @@ if (flashidx !== -1) {
   argv = argv1.argv;
 }
 
+unhook();
+
 export function parseArguments(): Options {
   const command = argv._[0];
   if (!command) {
@@ -315,7 +346,8 @@ export function parseArguments(): Options {
     case 'init':
       return { type: 'init' };
     case 'settings':
-      const { showSettings, setSettings } = argv;
+      const showSettings = argv[showSettings2];
+      const setSettings= argv[setSettings2];
       return { type: 'settings', showSettings, setSettings };
     case 'status':
       return { type: 'status' };
