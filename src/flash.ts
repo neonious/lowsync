@@ -90,8 +90,15 @@ export async function flash(port: string, params: string[]) {
     get_mac?: boolean
   ) {
     return new Promise<unknown>((resolve, reject) => {
+      let cmds;
+      if (os.platform()==='win32'){
+        cmds = ['python'];
+      }else{
+        cmds=['/usr/bin/env','python']
+      }
       if (typeof cmd == 'string') cmd = [cmd];
-      const flasher = spawn('python', ['esptool.py', ...params, ...cmd], {
+      cmds = [...cmds,'esptool.py', ...params, ...cmd]
+      const flasher = spawn(cmds[0], cmds.slice(1), {
         cwd: path.join(__dirname, 'esptool')
       });
 
@@ -195,9 +202,9 @@ export async function flash(port: string, params: string[]) {
 
   console.log('*** Step 3/3: Flashing image');
 
-  let dir = await fs.mkdtemp(os.tmpdir() + 'lowsync-');
-  let boot_partition_file = dir + '/part1';
-  let app_data_file = dir + '/part2';
+  let dir = await fs.mkdtemp(path.join(os.tmpdir(), 'lowsync-'));
+  let boot_partition_file = path.join(dir, 'part1');
+  let app_data_file = path.join(dir,'part2');
 
   await fs.writeFile(boot_partition_file, data.slice(0, 0x8000));
   await fs.writeFile(app_data_file, data.slice(0x8000));
