@@ -16,6 +16,8 @@ const babel = require('babel-core');
 import rimraf = require('rimraf');
 import * as cliProgress from 'cli-progress';
 
+const baseHeaders = {'is-lowrmt':'1'};
+
 function getStatusTextNoError(status: number) {
   try {
     getStatusText(status);
@@ -99,7 +101,7 @@ export function getFileSynchronizer(
   }
 
   async function fileToPc(fullPath: string, posixPath: string) {
-    const result = await webdavService.findBinaryFile(posixPath);
+    const result = await webdavService.findBinaryFile(posixPath,{headers:baseHeaders});
     if (result instanceof GetRequestError) {
       throw new SyncToLocalError(posixPath, `Could not get file from remote.`);
     }
@@ -132,7 +134,7 @@ export function getFileSynchronizer(
 
   async function dirToMc(fullPath: string, posixPath: string) {
     try {
-      await webdavService.createDirectory(posixPath);
+      await webdavService.createDirectory(posixPath,{headers:baseHeaders});
     } catch (e) {
       throw new SyncToRemoteError(
         posixPath,
@@ -173,12 +175,12 @@ export function getFileSynchronizer(
         createUint8Array(compiled),
         createUint8Array(map)
       );
-      await putBinaryFile(buffer, { headers });
+      await putBinaryFile(buffer, { headers:{...headers,...baseHeaders} });
     } else {
       if (data.byteLength === 0) {
-        await putBinaryFile(null as any); // todo
+        await putBinaryFile(null as any,{headers:baseHeaders}); // todo
       } else {
-        await putBinaryFile(data);
+        await putBinaryFile(data,{headers:baseHeaders});
       }
     }
   }
@@ -261,7 +263,7 @@ export function getFileSynchronizer(
               }
               case 'remove': {
                 try {
-                  await webdavService.deleteFile(posixPath);
+                  await webdavService.deleteFile(posixPath,{headers:baseHeaders});
                 } catch (e) {
                   throw new SyncToRemoteError(
                     posixPath,
