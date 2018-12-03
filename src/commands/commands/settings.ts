@@ -35,8 +35,7 @@ export class SettingsCommand extends Command {
             parsed.push({ dotKey, value });
         }
 
-        const settings = await this.httpApiService.GetSettings();
-        let flatSettings = toFlatStructure<any>(settings);
+        let flatSettings = {} as Record<SettingsKey,any>;
         for (const { dotKey, value } of parsed) {
             const key = dotKeysToKey[dotKey];
             flatSettings[key] = value;
@@ -58,11 +57,7 @@ export class SettingsCommand extends Command {
                 const msg = getTranslation(code, new EnglishTranslations());
                 errors.push(`${pad(dotKey, maxKeyLength)}: ${msg}`)
             }
-            if (errors.length) {
-                throw new RunError(`Cannot set settings\n${errors.join('\n')}`);
-            } else {
-                await this.httpApiService.SetSettings({ settings: newSettings })
-            }
+            throw new RunError(`Cannot set settings\n${errors.join('\n')}`);
         } else {
             await this.httpApiService.SetSettings({ settings: newSettings })
         }
