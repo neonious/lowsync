@@ -7,7 +7,7 @@ import { isPlainObject, mapValues } from 'lodash';
 import * as path from 'path';
 import inquirer = require('inquirer');
 import { Questions, Question } from 'inquirer';
-import { httpsPool } from '../common/src/services/http/handler/node';
+import { httpsPool, httpPool } from '../common/src/services/http/handler/node';
 import * as request from 'request-promise-native';
 import { AuthenticationService } from '../common/src/services/authentication/authentication';
 import { TYPES } from '../common/src/types';
@@ -23,6 +23,7 @@ export interface AuthConfig {
 export interface RemoteAccessConfig {
   ip: string;
   port?: number;
+  useHttp?:boolean;
 }
 export interface CommandConfig {
   syncDir: string;
@@ -499,11 +500,12 @@ export class RemoteAccessOpts extends Opts<RemoteAccessConfig, TheConfig> {
             if (!Number.isInteger(num)) {
               return 'Invalid datatype. Expected an integer.';
             }
+            if (num===-1)return;
             if (num < 0 || num > 65535) {
-              return 'Not a valid port number (0-65535).';
+              return 'Not a valid port number (0-65535). Specify -1 to use the default port.';
             }
           },
-          default: 8443,
+          default: -1,
           noInit: true,
           prompt: {
             type: 'input',
@@ -511,23 +513,33 @@ export class RemoteAccessOpts extends Opts<RemoteAccessConfig, TheConfig> {
               'What is the port of the microcontroller on your network?',
             saveConfigTransform: value => Number(value)
           }
+        },
+        useHttp:{
+          validate: value => {
+            if (value !== undefined && typeof value !== 'boolean')
+              return 'Invalid datatype. Expected a boolean.';
+          },
+          default:false, 
+          noInit:true,
         }
       },
-      askOrder: ['ip', 'port'],
-      ask: async ({ port, ip }) => {
+      askOrder: ['ip', 'port','useHttp'],
+      ask: async ({ port:_port, ip,useHttp }) => {
+        const protocol =useHttp?'http':'https';
+        const port = _port===-1?useHttp?8000:8443:_port;
         try {
           await request({
             method: 'POST',
-            agent: httpsPool,
-            uri: `https://${ip}:${port}/api/Login`,
+            agent: useHttp?httpPool:httpsPool,
+            uri: `${protocol}://${ip}:${port}/api/Login`,
             headers: { 'Content-Type': 'application/json;charset=UTF-8' },
             timeout: 30_000,
             body: JSON.stringify({ password: Date.now().toString() })
           });
-          setHostPrefix(`https://${ip}:${port}`);
+          setHostPrefix(`${protocol}://${ip}:${port}`);
         } catch {
           throw new RunError(
-            `The device cannot be reached under the provided IP and port (${ip}:${port}). (network problem, or wrong IP). Please correct the problem in your configuration or delete it and run lowsync --init`
+            `The device cannot be reached with the provided protocol, IP and port (${protocol}://${ip}:${port}). (maybe a network problem). Please correct the problem in your configuration or delete it and run lowsync --init`
           );
         }
       }
