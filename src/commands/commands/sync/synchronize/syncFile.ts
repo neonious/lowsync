@@ -19,8 +19,6 @@ import FsStructure, { setInStructure, FsAnyStructure, getStatFromStructure, getS
 import { saveSyncDataFile } from '../syncDataFile';
 import { FsFileStat } from '../fsStat';
 
-const baseHeaders = {'is-lowrmt':'1'};
-
 function getStatusTextNoError(status: number) {
   try {
     getStatusText(status);
@@ -111,7 +109,7 @@ export function getFileSynchronizer(
 
   async function fileToPc(relPath:string) {
     const {posixPath,fullPath}=getPaths(relPath);
-    const result = await webdavService.findBinaryFile(posixPath,{headers:baseHeaders});
+    const result = await webdavService.findBinaryFile(posixPath);
     if (result instanceof GetRequestError) {
       throw new SyncToLocalError(posixPath, `Could not get file from remote.`);
     }
@@ -154,7 +152,7 @@ export function getFileSynchronizer(
   async function dirToMc(relPath:string) {
       const {posixPath}=getPaths(relPath);
     try {
-      await webdavService.createDirectory(posixPath,{headers:baseHeaders});
+      await webdavService.createDirectory(posixPath);
     } catch (e) {
       throw new SyncToRemoteError(
         posixPath,
@@ -197,12 +195,12 @@ export function getFileSynchronizer(
         createUint8Array(compiled),
         createUint8Array(map)
       );
-      await putBinaryFile(buffer, { headers:{...headers,...baseHeaders} });
+      await putBinaryFile(buffer, { headers });
     } else {
       if (data.byteLength === 0) {
-        await putBinaryFile(null as any,{headers:baseHeaders}); // todo
+        await putBinaryFile(null as any); // todo
       } else {
-        await putBinaryFile(data,{headers:baseHeaders});
+        await putBinaryFile(data);
       }
     }
     const sub = getSubStructure(local,relPath);
@@ -294,7 +292,7 @@ export function getFileSynchronizer(
               }
               case 'remove': {
                 try {
-                  await webdavService.deleteFile(posixPath,{headers:baseHeaders});
+                  await webdavService.deleteFile(posixPath);
                   await setInStructureFromRelPath(file.relPath,{type:"non-existing"}); 
                 } catch (e) {
                   throw new SyncToRemoteError(

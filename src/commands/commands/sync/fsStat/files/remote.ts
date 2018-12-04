@@ -54,7 +54,6 @@ export default async function getRemoteFiles({
     headers: {
       "Content-Type": "application/xml;charset=UTF-8",
       "lowrmt-md5": "1",
-      'is-lowrmt':'1'
     }
   }); // todo error handling here too
   const { responseText, headers } = await requestPromise;

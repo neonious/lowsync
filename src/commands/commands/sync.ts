@@ -181,6 +181,8 @@ export class SyncCommand extends Command<'syncDir' | 'transpile' | 'exclude'> {
       if (syncFileExists) {
         await fs.unlink(this.syncFilePath);
       }
+
+      await this.httpApiService.SetLowSyncHadPut();
     }
     const remoteFilesStruct = toStructure(remoteFiles);
 
