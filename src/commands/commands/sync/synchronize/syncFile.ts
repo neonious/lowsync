@@ -15,6 +15,9 @@ import { SyncFile } from './syncFile';
 const babel = require('babel-core');
 import rimraf = require('rimraf');
 import * as cliProgress from 'cli-progress';
+import FsStructure, { setInStructure, FsAnyStructure, getStatFromStructure, getSubStructure } from '../fsStructure';
+import { saveSyncDataFile } from '../syncDataFile';
+import { FsFileStat } from '../fsStat';
 
 const baseHeaders = {'is-lowrmt':'1'};
 
@@ -86,9 +89,14 @@ function transpileJavaScript(
 export function getFileSynchronizer(
   rootDir: string,
   webdavService: WebdavService,
-  noTranspile: boolean
+  noTranspile: boolean,
+  base:FsStructure,
+  remote:FsStructure,
+  local:FsStructure,
+  syncFilePath:string
 ) {
-  async function dirToPc(fullPath: string, posixPath: string) {
+  async function dirToPc(relPath:string) {
+    const {fullPath}=getPaths(relPath);
     try {
       await fs.mkdirp(fullPath);
     } catch (e) {
@@ -98,9 +106,11 @@ export function getFileSynchronizer(
         e
       );
     }
+    await setInStructureFromRelPath(relPath,{type:"dir",content:{}});
   }
 
-  async function fileToPc(fullPath: string, posixPath: string) {
+  async function fileToPc(relPath:string) {
+    const {posixPath,fullPath}=getPaths(relPath);
     const result = await webdavService.findBinaryFile(posixPath,{headers:baseHeaders});
     if (result instanceof GetRequestError) {
       throw new SyncToLocalError(posixPath, `Could not get file from remote.`);
@@ -130,9 +140,19 @@ export function getFileSynchronizer(
         e
       );
     }
+    const sub = getSubStructure(remote,relPath);
+    const {md5,size} = getStatFromStructure(relPath,sub) as FsFileStat;
+    await setInStructureFromRelPath(relPath,{type:'file',md5,size});
   }
 
-  async function dirToMc(fullPath: string, posixPath: string) {
+  function getPaths(relPath:string){
+    const posixPath = osRelPathToRootedPosix(relPath);
+      const fullPath = path.join(rootDir, relPath);
+      return {posixPath,fullPath};
+  }
+
+  async function dirToMc(relPath:string) {
+      const {posixPath}=getPaths(relPath);
     try {
       await webdavService.createDirectory(posixPath,{headers:baseHeaders});
     } catch (e) {
@@ -142,10 +162,12 @@ export function getFileSynchronizer(
         e
       );
     }
+    await setInStructureFromRelPath(relPath,{type:"dir",content:{}});
   }
 
-  async function fileToMc(fullPath: string, posixPath: string) {
-    let data;
+  async function fileToMc(relPath:string) {
+      const {posixPath,fullPath}=getPaths(relPath);
+      let data;
     try {
       data = await fs.readFile(fullPath);
     } catch (e) {
@@ -183,7 +205,16 @@ export function getFileSynchronizer(
         await putBinaryFile(data,{headers:baseHeaders});
       }
     }
+    const sub = getSubStructure(local,relPath);
+    const {md5,size} = getStatFromStructure(relPath,sub) as FsFileStat;
+    await setInStructureFromRelPath(relPath,{type:'file',md5,size});
   }
+
+  async function setInStructureFromRelPath(relPath:string,
+    statStruct: FsAnyStructure){
+      setInStructure(base,relPath,statStruct);
+      await saveSyncDataFile(syncFilePath, base);
+    }
 
   return async function(files: SyncFile[]) {
     const bar = new cliProgress.Bar({
@@ -196,8 +227,7 @@ export function getFileSynchronizer(
     let val=0;
     for (const file of files) {
       bar.update(val,{file:`Synchronizing: ${file.relPath}`});
-      const posixPath = osRelPathToRootedPosix(file.relPath);
-      const fullPath = path.join(rootDir, file.relPath);
+      const {posixPath,fullPath}=getPaths(file.relPath);
       switch (file.destside) {
         case 'pc': {
           try {
@@ -205,11 +235,11 @@ export function getFileSynchronizer(
               case 'add': {
                 switch (file.statType) {
                   case 'file': {
-                    await fileToPc(fullPath, posixPath);
+                    await fileToPc(file.relPath);
                     break;
                   }
                   case 'dir': {
-                    await dirToPc(fullPath, posixPath);
+                    await dirToPc(file.relPath);
                     break;
                   }
                 }
@@ -221,6 +251,7 @@ export function getFileSynchronizer(
                     await new Promise((resolve, reject) =>
                       rimraf(fullPath, err => (err ? reject(err) : resolve()))
                     );
+                    await setInStructureFromRelPath(file.relPath,{type:"non-existing"}); 
                   } catch (e) {
                     throw new SyncToLocalError(
                       fullPath,
@@ -251,11 +282,11 @@ export function getFileSynchronizer(
               case 'add': {
                 switch (file.statType) {
                   case 'file': {
-                    await fileToMc(fullPath, posixPath);
+                    await fileToMc(file.relPath);
                     break;
                   }
                   case 'dir': {
-                    await dirToMc(fullPath, posixPath);
+                    await dirToMc(file.relPath);
                     break;
                   }
                 }
@@ -264,6 +295,7 @@ export function getFileSynchronizer(
               case 'remove': {
                 try {
                   await webdavService.deleteFile(posixPath,{headers:baseHeaders});
+                  await setInStructureFromRelPath(file.relPath,{type:"non-existing"}); 
                 } catch (e) {
                   throw new SyncToRemoteError(
                     posixPath,

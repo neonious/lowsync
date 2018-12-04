@@ -71,31 +71,16 @@ export class SyncCommand extends Command<'syncDir' | 'transpile' | 'exclude'> {
   private async updateBase(
     actions: FinalAction[],
     local: FsStructure,
-    remote: FsStructure,
     base: FsStructure
   ) {
-    base = cloneDeep(base);
     for (const action of actions) {
-      switch (action.type) {
-        case 'syncToRemote':
-        case 'updateBase': {
-          const subStruct = getSubStructure(local, action.relativePath);
-          setInStructure(
-            base,
-            action.relativePath,
-            subStruct as FsStatStructure
-          );
-          break;
-        }
-        case 'syncToLocal': {
-          const subStruct = getSubStructure(remote, action.relativePath);
-          setInStructure(
-            base,
-            action.relativePath,
-            subStruct as FsStatStructure
-          );
-          break;
-        }
+      if (action.type==='updateBase'){
+        const subStruct = getSubStructure(local, action.relativePath);
+        setInStructure(
+          base,
+          action.relativePath,
+          subStruct as FsStatStructure
+        );
       }
     }
     await saveSyncDataFile(this.syncFilePath, base);
@@ -216,6 +201,12 @@ export class SyncCommand extends Command<'syncDir' | 'transpile' | 'exclude'> {
     const syncLog: SyncFile[] = [];
     const fakeSyncLog: SyncFileFakeRemove[] = [];
 
+    await this.updateBase(
+      finalActions,
+      localFileStruct,
+      baseFilesStruct
+    );
+
     if (
       !finalActions.filter(
         a => a.type === 'syncToLocal' || a.type === 'syncToRemote'
@@ -234,18 +225,15 @@ export class SyncCommand extends Command<'syncDir' | 'transpile' | 'exclude'> {
       const synchronizer = getFileSynchronizer(
         this.config.syncDir,
         this.webdavService,
-        !this.doTranspile
+        !this.doTranspile,
+        baseFilesStruct,
+        remoteFilesStruct,
+        localFileStruct,
+        this.syncFilePath
       );
 
       await synchronizer(syncLog);
     }
-
-    await this.updateBase(
-      finalActions,
-      localFileStruct,
-      remoteFilesStruct,
-      baseFilesStruct
-    );
 
     for (const { destside, relPath, statType } of syncLog.filter(
       s => s.type === 'add'
