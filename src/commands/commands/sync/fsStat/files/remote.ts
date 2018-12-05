@@ -57,7 +57,7 @@ export default async function getRemoteFiles({
     }
   }); // todo error handling here too
   const { responseText, headers } = await requestPromise;
-  const hadPut = headers['lowrmt-had-sync']==='1';
+  const hadPut = headers['lowrmt-had-put']==='1';
   const result = await new Promise<PropfindData>((resolve, reject) => {
     parseString(responseText, { explicitArray: false }, (err, result) => {
       if (err) {
