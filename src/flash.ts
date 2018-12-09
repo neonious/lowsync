@@ -5,6 +5,8 @@ import * as https from 'https';
 import * as cliProgress from 'cli-progress';
 import { RunError } from './runError';
 import * as path from 'path';
+import { noop } from 'lodash';
+const opn = require('opn');
 
 export async function flash(port: string, params: string[]) {
   let doneErasing = false;
@@ -218,6 +220,9 @@ export async function flash(port: string, params: string[]) {
   // Get mac address
   console.log('*** Step 1/3: Probing ESP32 microcontroller');
   let mac = (await call('read_mac', false, true)) as string;
+
+  // open browser window here, no not wait and ignore any unhandled promise catch handlers
+  await opn('https://www.neonious.com/ThankYou',{wait:false}).catch(noop);
 
   // Get signed data based on MAC address and do flash erase in parallel, if requested
   let data;
