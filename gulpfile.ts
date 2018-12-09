@@ -2,7 +2,7 @@ import * as gulp from 'gulp';
 import * as execa from 'execa';
 import { runNonWindowsCmd } from './common/src/common/processUtil';
 
-async function publicDoc() {
+async function publishDoc() {
     // for windows 2 make calls
     await execa('make', ['clean'], { cwd: 'doc', stdio: 'inherit' });
     await execa('make', ['html'], { cwd: 'doc', stdio: 'inherit' });
@@ -10,5 +10,5 @@ async function publicDoc() {
 }
 
 gulp.task('publish-doc', async () => {
-    await publicDoc();
+    await publishDoc();
 });

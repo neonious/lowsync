@@ -14,7 +14,8 @@
   ],
   "scripts": {
     "init": "npm i && cd common && npm i",
-    "watch": "webpack --mode development --progress --watch"
+    "watch": "webpack --mode development --progress --watch",
+    "publish-doc":"npx gulp publish-doc"
   },
   "author": "neonious GmbH",
   "engines": {

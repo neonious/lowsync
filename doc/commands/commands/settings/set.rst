@@ -12,21 +12,23 @@ Synopsis
 
 .. code-block:: bash
 
-    lowsync settings set <key-value-pairs..>
+    lowsync settings set [<category>.<setting>=<value>..]
 
 Description
 ==================
 
 Set one or more settings.
 
+See the :doc:`/commands/commands/settings/set` command for available settings.
+
 Options
 ==================
 
 .. code-block:: bash
 
-    key-value-pairs..
+    <category>.<setting>=<value>..
 
-The syntax of a key/value pair must be in the form *key=value*. If the value is a string and contains spaces, it must be enclosed in double quotes (:code:`"`). Multiple key/value pairs may be given. Separate multiple key/value pairs with spaces.
+If the value is a string and contains spaces, it must be enclosed in double quotes (:code:`"`). Multiple key/value pairs may be given. Separate multiple key/value pairs with spaces.
 
 Examples
 ==================

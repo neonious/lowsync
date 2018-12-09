@@ -12,7 +12,7 @@ Synopsis
 
 .. code-block:: bash
 
-    lowsync settings show [keys..]
+    lowsync settings show [<category>.<setting>..]
 
 Description
 ==================
@@ -24,7 +24,7 @@ Options
 
 .. code-block:: bash
 
-    keys..
+    <category>.<setting>..
 
 The settings to display. Omit this option to display the value of all settings. Separate multiple keys with spaces.
 

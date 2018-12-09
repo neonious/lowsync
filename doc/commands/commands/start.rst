@@ -12,14 +12,16 @@ Synopsis
 
 .. code-block:: bash
 
-    lowsync start <file> [--force]
+    lowsync start [file] [--force]
 
 Description
 ==================
 
-Starts the program on the device. Will fail if it is already running, unless the :code:`--force` option is given.
+Starts the program on the device.
 
-The file is the entry point of the program and must exist. If the integrated transpilation feature is turned off, the user must specify a valid EcmaScript 5 file. See :doc:`/commands/commands/sync` command for more information.
+The file is the entry point of the program and must exist if given. If the integrated transpilation feature is turned off, the user must specify a valid EcmaScript 5 file. See :doc:`/commands/commands/sync` command for more information.
+
+If a file is not specified, the file in the settings (code.main key) is used.
 
 Options
 ==================
@@ -28,7 +30,7 @@ Options
 
     --force
 
-Restart the program if it is currently running (no error).
+Force a restart of the program if it is currently running.
 
 Examples
 ==================
