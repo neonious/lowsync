@@ -1,6 +1,6 @@
 import * as fs from 'fs-extra';
 import * as os from 'os';
-import { spawn } from 'child_process';
+import { spawn, ChildProcess, SpawnOptions } from 'child_process';
 import * as https from 'https';
 import * as cliProgress from 'cli-progress';
 import { RunError } from './runError';
@@ -54,11 +54,11 @@ export async function flash(port: string, params: string[]) {
     return new Promise<Buffer>((resolve, reject) => {
       https.get(
         {
-          hostname:'neonious.com',
-          port:8443,
-          path:`/GetFlashData?mac=${mac}`,
-          rejectUnauthorized:false,
-          method:'GET'
+          hostname: 'neonious.com',
+          port: 8443,
+          path: `/GetFlashData?mac=${mac}`,
+          rejectUnauthorized: false,
+          method: 'GET'
         },
         res => {
           var data: Buffer[] = [];
@@ -84,63 +84,96 @@ export async function flash(port: string, params: string[]) {
     });
   }
 
-  function call(
-    cmd: string | string[],
+  function spawnAsync(
+    writestd: boolean,
+    prog: string,
+    args: string[],
+    opts: SpawnOptions
+  ) {
+    const p = spawn(prog, args, opts);
+    return new Promise<{ code: number; out: string }>((resolve, reject) => {
+      p.on('error', reject);
+      let out = '';
+      p.stdout.on('data', data => {
+        if (!writestd) out += data;
+        else process.stdout.write(data);
+      });
+      p.stderr.on('data', data => {
+        if (!writestd) out += data;
+        else process.stderr.write(data);
+      });
+      p.on('close', code => {
+        resolve({ code, out });
+      });
+    });
+  }
+
+  async function spawnMultiple(
+    writestd: boolean,
+    progs: string[],
+    args: string[],
+    opts: SpawnOptions
+  ) {
+    for (const prog of progs) {
+      try {
+        return await spawnAsync(writestd, prog, args, opts);
+      } catch (e) {
+        if (e.code !== 'ENOENT' && e.message.indexOf('ENOENT') === -1) {
+          throw e;
+        }
+      }
+    }
+    throw new RunError(
+      'None of the following programs exist, but at least one must exist',
+      JSON.stringify(progs)
+    );
+  }
+
+  async function call(
+    cmds: string | string[],
     sane_check?: boolean,
     get_mac?: boolean
   ) {
-    return new Promise<unknown>((resolve, reject) => {
-      let cmds;
-      if (os.platform()==='win32'){
-        cmds = ['python'];
-      }else{
-        cmds=['/usr/bin/env','python']
-      }
-      if (typeof cmd == 'string') cmd = [cmd];
-      cmds = [...cmds,'esptool.py', ...params, ...cmd]
-      const flasher = spawn(cmds[0], cmds.slice(1), {
+    cmds = Array.isArray(cmds) ? cmds : [cmds];
+    const progs = [];
+    const argsAfterCmd = [];
+    if (os.platform() === 'win32') {
+      progs.push('py', 'python', 'python3');
+    } else {
+      progs.push('/usr/bin/env');
+      argsAfterCmd.push('python');
+    }
+    const { code, out } = await spawnMultiple(
+      !(sane_check || get_mac),
+      progs,
+      [...argsAfterCmd, 'esptool.py', ...params, ...cmds],
+      {
         cwd: path.join(__dirname, 'esptool')
-      });
+      }
+    );
 
-      let txt = '';
-      flasher.stdout.on('data', data => {
-        if (sane_check || get_mac) txt += data;
-        else process.stdout.write(data);
-      });
-      flasher.stderr.on('data', data => {
-        if (sane_check || get_mac) txt += data;
-        else process.stderr.write(data);
-      });
+    if (sane_check && code) {
+      console.log(out);
+      return false;
+    } else if (get_mac) {
+      let pos = out.indexOf('MAC: ');
+      let posEnd = out.indexOf(os.EOL, pos);
+      let id = out
+        .substring(pos + 5, posEnd)
+        .replace(/:/g, '')
+        .toUpperCase();
 
-      flasher.on('close', code => {
-        if (sane_check && code) {
-          console.log(txt);
-          resolve(false);
-        } else if (get_mac) {
-          let pos = txt.indexOf('MAC: ');
-          let posEnd = txt.indexOf('\n', pos);
-          let id = txt
-            .substring(pos + 5, posEnd)
-            .replace(/:/g, '')
-            .toUpperCase();
-
-          if (pos == -1 || posEnd == -1 || id.length != 12) {
-            console.log(txt);
-            reject(
-              new RunError('Cannot read MAC address of ESP32 chip. Exiting.')
-            );
-          } else resolve(id);
-        } else {
-          if (code)
-            reject(
-              new RunError(
-                'esptool exited with exit code ' + code + '. Exiting.'
-              )
-            );
-          else resolve();
-        }
-      });
-    });
+      if (pos == -1 || posEnd == -1 || id.length != 12) {
+        console.log(out);
+        throw new RunError('Cannot read MAC address of ESP32 chip. Exiting.');
+      }
+      return id;
+    } else {
+      if (code)
+        throw new RunError(
+          'esptool exited with exit code ' + code + '. Exiting.'
+        );
+    }
   }
   async function erase_flash() {
     await call('erase_flash');
@@ -204,7 +237,7 @@ export async function flash(port: string, params: string[]) {
 
   let dir = await fs.mkdtemp(path.join(os.tmpdir(), 'lowsync-'));
   let boot_partition_file = path.join(dir, 'part1');
-  let app_data_file = path.join(dir,'part2');
+  let app_data_file = path.join(dir, 'part2');
 
   await fs.writeFile(boot_partition_file, data.slice(0, 0x8000));
   await fs.writeFile(app_data_file, data.slice(0x8000));
