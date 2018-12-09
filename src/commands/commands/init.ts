@@ -70,20 +70,5 @@ export class InitCommand extends Command {
     }
     await this.remoteAccessConfig.init(useConfigFile);
     await this.commandConfig.init(useConfigFile);
-
-    const initIdx = process.argv.indexOf('init');
-    if (initIdx !== -1) {
-      const { sync } = await prompt<{ sync: boolean }>({
-        name: 'sync',
-        type: 'confirm',
-        message: 'Do you want to do an initial sync right now?',
-        default: true
-      });
-
-      if (sync) {
-        const args = process.argv.slice(0, initIdx).concat(['sync']);
-        spawn(args[0], args.slice(1), { stdio: 'inherit' });
-      }
-    }
   }
 }
