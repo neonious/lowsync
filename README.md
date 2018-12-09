@@ -15,7 +15,7 @@ $ npm install -g lowsync
 
 ## Usage
 
-View the official [documentation](https://www.neonious.com/Documentation/lowsync).
+View the official [documentation](https://www.lowjs.org/lowsync-doc/index.html).
 
 ## Development
 
