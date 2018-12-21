@@ -126,8 +126,7 @@ export async function flash(port: string, params: string[]) {
       }
     }
     throw new RunError(
-      'None of the following programs exist, but at least one must exist',
-      JSON.stringify(progs)
+      `Python does not seem to be installed. None of the following programs exist, but at least one of them must exist: ${progs.join(', ')}`
     );
   }
 
