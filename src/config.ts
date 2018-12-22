@@ -23,7 +23,7 @@ export interface AuthConfig {
 export interface RemoteAccessConfig {
   ip: string;
   port?: number;
-  useHttp?:boolean;
+  useHttp?: boolean;
 }
 export interface CommandConfig {
   syncDir: string;
@@ -42,8 +42,8 @@ interface PropMeta {
     type: PromptType;
     provideValueForQuestion: string;
     default?: unknown;
-    saveConfigTransform?: (value: unknown) => unknown;
   };
+  saveConfigTransform?: (value: unknown) => unknown;
   transformForUse?: (value: unknown) => unknown;
 }
 
@@ -217,7 +217,8 @@ class Opts<TConfig, TConfigFile extends TConfig> {
         prompt: promptOpts,
         validate,
         default: _default,
-        noInit
+        noInit,
+        saveConfigTransform
       } = this.metas[key];
       if (noInit || !promptOpts) {
         // if pconfig here means that pconfig is a new config object since only new config objects are passed into this method
@@ -229,8 +230,7 @@ class Opts<TConfig, TConfigFile extends TConfig> {
       const {
         type,
         provideValueForQuestion,
-        default: promptDefault,
-        saveConfigTransform
+        default: promptDefault
       } = promptOpts;
       let defValue = await config.getKey(key);
       const errMsg = validate(defValue);
@@ -282,7 +282,8 @@ class Opts<TConfig, TConfigFile extends TConfig> {
           required,
           prompt: promptOpts,
           validate,
-          default: _default
+          default: _default,
+          saveConfigTransform
         } = this.metas[key];
         const currentValue = await this.config.getKey(key);
         if (currentValue === undefined && _default !== undefined) continue;
@@ -297,8 +298,7 @@ class Opts<TConfig, TConfigFile extends TConfig> {
           const {
             type,
             provideValueForQuestion,
-            default: promptDefault,
-            saveConfigTransform
+            default: promptDefault
           } = promptOpts;
           const message = req
             ? `No value was found in ${
@@ -376,30 +376,33 @@ export class CommandConfigOpts extends Opts<CommandConfig, TheConfig> {
       config,
       metas: {
         syncDir: {
-          required: true,
           validate: value => {
-            if (!value) {
-              return 'A value was not provided.';
-            }
-            if (typeof value !== 'string')
-              return 'Invalid datatype. Expected a string.';
-            try {
-              // check if path valid
-              path.resolve(value);
-            } catch {
-              return 'Invalid path format: Must be a valid relative or absolute path.';
+            if (value !== undefined) {
+              if (typeof value !== 'string')
+                return 'Invalid datatype. Expected a string.';
+              try {
+                // check if path valid
+                path.resolve(value);
+              } catch {
+                return 'Invalid path format: Must be a valid relative or absolute path.';
+              }
             }
           },
+          default: path.dirname(config.file),
           prompt: {
             type: 'input',
             provideValueForQuestion:
               'What is the local directory that you want to sync with?',
-            default: process.cwd(),
-            saveConfigTransform: value =>
-              path.relative(path.dirname(config.file), value as string) || '.'
+            default: process.cwd()
           },
-          transformForUse: value => path.resolve(path.dirname(config.file), value as string)
-        }, 
+          saveConfigTransform: value =>
+            path.relative(path.dirname(config.file), value as string) ||
+            undefined,
+          transformForUse: value =>
+            value
+              ? path.resolve(path.dirname(config.file), value as string)
+              : path.dirname(config.file)
+        },
         transpile: {
           validate: value => {
             if (value !== undefined && typeof value !== 'boolean')
@@ -491,46 +494,45 @@ export class RemoteAccessOpts extends Opts<RemoteAccessConfig, TheConfig> {
           }
         },
         port: {
-          required: true,
           validate: value => {
-            if (!value || isNaN(value as any)) {
-              return 'Invalid datatype. Expected a number.';
-            }
-            const num = Number(value);
-            if (!Number.isInteger(num)) {
-              return 'Invalid datatype. Expected an integer.';
-            }
-            if (num===-1)return;
-            if (num < 0 || num > 65535) {
-              return 'Not a valid port number (0-65535). Specify -1 to use the default port.';
+            if (value !== undefined) {
+              if (isNaN(value as any)) {
+                return 'Invalid datatype. Expected a number.';
+              }
+              const num = Number(value);
+              if (!Number.isInteger(num)) {
+                return 'Invalid datatype. Expected an integer.';
+              }
+              if (num < 0 || num > 65535) {
+                return 'Not a valid port number (0-65535). Specify -1 to use the default port.';
+              }
             }
           },
-          default: -1,
           noInit: true,
           prompt: {
             type: 'input',
             provideValueForQuestion:
-              'What is the port of the microcontroller on your network?',
-            saveConfigTransform: value => Number(value)
-          }
+              'What is the port of the microcontroller on your network?'
+          },
+          saveConfigTransform: value =>
+            value !== undefined ? Number(value) : undefined
         },
-        useHttp:{
+        useHttp: {
           validate: value => {
             if (value !== undefined && typeof value !== 'boolean')
               return 'Invalid datatype. Expected a boolean.';
           },
-          default:false, 
-          noInit:true,
+          noInit: true
         }
       },
-      askOrder: ['ip', 'port','useHttp'],
-      ask: async ({ port:_port, ip,useHttp }) => {
-        const protocol =useHttp?'http':'https';
-        const port = _port===-1?useHttp?8000:8443:_port;
+      askOrder: ['ip', 'port', 'useHttp'],
+      ask: async ({ port: _port, ip, useHttp }) => {
+        const protocol = useHttp ? 'http' : 'https';
+        const port = _port === undefined ? (useHttp ? 8000 : 8443) : _port;
         try {
           await request({
             method: 'POST',
-            agent: useHttp?httpPool:httpsPool,
+            agent: useHttp ? httpPool : httpsPool,
             uri: `${protocol}://${ip}:${port}/api/Login`,
             headers: { 'Content-Type': 'application/json;charset=UTF-8' },
             timeout: 30_000,
