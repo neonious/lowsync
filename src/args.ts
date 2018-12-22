@@ -113,7 +113,7 @@ export function jsonParse(str: string) {
 }
 
 const argv1 = yargs
-  .strict()
+  .strict().scriptName('lowsync')
   .locale('en') // so that yargs generated text is in english, just like the other text
   .command(
     ['[sync]', '$0'],
@@ -325,7 +325,7 @@ const argv1 = yargs
 
 const flashidx = process.argv.indexOf('flash');
 const other: string[] = [];
-let argv: Arguments;
+let argv: Arguments<any>;
 if (flashidx !== -1) {
   other.push(...process.argv.slice(flashidx + 2));
   const args = process.argv.slice(flashidx, flashidx + 2);
