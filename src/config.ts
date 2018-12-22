@@ -139,7 +139,7 @@ class Config<TConfig> {
         throw new RunError(
           `Unable to parse configuration file ${
             this.file
-          }. Maybe it is corrupted. Check if it is in a valid JSON format or delete it and run lowsync --init to create a new one.`
+          }. Maybe it is corrupted. Check if it is in a valid JSON format or delete it and run lowsync init to create a new one.`
         );
       }
       throw e;
@@ -149,7 +149,7 @@ class Config<TConfig> {
       throw new RunError(
         `Unable to parse configuration file ${
           this.file
-        }. The file must contain a javascript object ({...}). You may want to delete it and run lowsync --init to create a new one.`
+        }. The file must contain a javascript object ({...}). You may want to delete it and run lowsync init to create a new one.`
       );
     }
     this._config = parsed;
@@ -463,7 +463,7 @@ export class AuthOpts extends Opts<AuthConfig, AuthConfig> {
           await this.authenticationService.logout();
         } else {
           throw new RunError(
-            'The password seems to be invalid. Please correct the problem in your configuration or delete it and run lowsync --init'
+            'The password seems to be invalid. Please correct the problem in your configuration or delete it and run lowsync init'
           );
         }
       }
@@ -541,7 +541,7 @@ export class RemoteAccessOpts extends Opts<RemoteAccessConfig, TheConfig> {
           setHostPrefix(`${protocol}://${ip}:${port}`);
         } catch {
           throw new RunError(
-            `The device cannot be reached with the provided protocol, IP and port (${protocol}://${ip}:${port}). (maybe a network problem). Please correct the problem in your configuration or delete it and run lowsync --init`
+            `The device cannot be reached with the provided protocol, IP and port (${protocol}://${ip}:${port}). (maybe a network problem). Please correct the problem in your configuration or delete it and run lowsync init`
           );
         }
       }
