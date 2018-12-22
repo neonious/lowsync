@@ -32,9 +32,14 @@ export class Program {
   ) {}
 
   async run() {
+   
     const command = this.commands.find(c => c.command === this.options.type)!;
     const errors = [];
     const doLogin = !command.usingNoRemoteApis;
+    const configKeys = Object.keys(command.requestConfig) as (keyof CommandConfig)[];
+    if ((configKeys.length||doLogin) && !await this.configFile.exists()){
+      throw new RunError('A configuration file does not exist yet. Please run lowsync init to create one first.');
+    }
     const unknownErrs = [];
     unknownErrs.push(...(await this.configFile.unknownConfigKeyErrors()));
     unknownErrs.push(...(await this.authConfigFile.unknownConfigKeyErrors()));
@@ -45,7 +50,6 @@ export class Program {
       errors.push(...(await this.remoteAccessConfig.getErrors()));
       errors.push(...(await this.authConfig.getErrors()));
     }
-    const configKeys = Object.keys(command.requestConfig) as (keyof CommandConfig)[];
     errors.push(...(await this.commandConfig.getErrors(configKeys)));
 
     if (doLogin) {
