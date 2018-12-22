@@ -529,20 +529,31 @@ export class RemoteAccessOpts extends Opts<RemoteAccessConfig, TheConfig> {
       ask: async ({ port: _port, ip, useHttp }) => {
         const protocol = useHttp ? 'http' : 'https';
         const port = _port === undefined ? (useHttp ? 8000 : 8443) : _port;
+        const url = `${protocol}://${ip}:${port}`;
+        const timer = setTimeout(() => {
+          console.log(
+            `Testing connection to microcontroller at ${url}... This can take a while if your connection is bad. If the url is incorrect, please abort lowsync and change the config file or run lowsync init.`
+          );
+        }, 4000);
         try {
           await request({
             method: 'POST',
             agent: useHttp ? httpPool : httpsPool,
-            uri: `${protocol}://${ip}:${port}/api/Login`,
-            headers: { 'Content-Type': 'application/json;charset=UTF-8' },
-            timeout: 30_000,
-            body: JSON.stringify({ password: Date.now().toString() })
+            uri: `${url}/api/IsLoggedIn`,
+            headers: {
+              'Content-Type': 'application/json;charset=UTF-8',
+              SessionID: 'dummy_session_id'
+            },
+            timeout: 30_000
+            // body: JSON.stringify({ password: Date.now().toString() })
           });
-          setHostPrefix(`${protocol}://${ip}:${port}`);
+          setHostPrefix(url);
         } catch {
           throw new RunError(
-            `The device cannot be reached with the provided protocol, IP and port (${protocol}://${ip}:${port}). (maybe a network problem). Please correct the problem in your configuration or delete it and run lowsync init`
+            `The device cannot be reached with the provided protocol, IP and port (${url}). (maybe a network problem). Please correct the problem in your configuration or delete it and run lowsync init`
           );
+        } finally {
+          clearTimeout(timer);
         }
       }
     });
