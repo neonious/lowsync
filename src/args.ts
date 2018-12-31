@@ -1,11 +1,6 @@
-import * as yargs from 'yargs';
-import { Argv, Arguments } from 'yargs';
-import { maxBy } from 'lodash';
-import { pad } from 'underscore.string';
 import chalk from 'chalk';
-import { getDotKeyMapping, validateAll } from '@common/src/settings/util';
-import { SettingsKey } from '@common/src/settings/definitions';
-import { EnglishTranslations } from '@common/src/translations/en';
+import * as yargs from 'yargs';
+import { Arguments } from 'yargs';
 
 // from https://gist.github.com/pguillory/729616
 const old_write = process.stdout.write
@@ -92,15 +87,6 @@ export type Options =
   | FlashOptions
   | UpdateOptions;
 
-function throwErrrorsIfExist(results: { setting: string; msg: string }[]) {
-  if (results.length) {
-    const padBy = maxBy(results, e => e.setting.length)!.setting.length;
-    const errList = results
-      .map(({ setting, msg }) => `${pad(setting, padBy)}: ${msg}`)
-      .join('\n');
-    throw new Error(`${errList}`);
-  }
-}
 
 export function jsonParse(str: string) {
   try {
@@ -147,22 +133,6 @@ const argv1 = yargs
               .positional(showSettings2, {
                 describe:
                   'The settings you want to display the values for. Leave out to show all values.'
-              })
-              .check(argv => {
-                const settings = argv[showSettings2];
-                const results = [];
-                const dotKeysToKey = getDotKeyMapping();
-                for (const setting of settings) {
-                  if (!dotKeysToKey[setting]) {
-                    results.push({
-                      setting,
-                      msg: `Unknown setting. Use 'show' without arguments to show what settings exist.`
-                    });
-                    continue;
-                  }
-                }
-                throwErrrorsIfExist(results);
-                return true;
               });
           }
         )
@@ -174,59 +144,6 @@ const argv1 = yargs
               .positional(setSettings2, {
                 describe:
                   'The settings you want to change. In the form of <setting>=<value>. Enclose string values with quotes ("").'
-              })
-              .check(argv => {
-                const settings = argv[setSettings2];
-                if (!settings.length) {
-                  throw new Error('Must provide settings to set');
-                }
-                const results = [];
-                const dotKeysToKey = getDotKeyMapping();
-                for (const setting of settings) {
-                  const eqIndex = setting.indexOf('=');
-                  if (eqIndex === -1) {
-                    results.push({
-                      setting,
-                      msg: `Invalid set setting syntax. Use <setting>=<value>. Enclose string values with quotes ("").`
-                    });
-                    continue;
-                  }
-                  const dotKey = setting.substr(0, eqIndex);
-                  if (!dotKeysToKey[dotKey]) {
-                    results.push({
-                      setting,
-                      msg: `Unknown setting ${dotKey}. Use 'show' without arguments to show what settings exist.`
-                    });
-                    continue;
-                  }
-                  const valueStr = setting.substr(eqIndex + 1);
-                  try {
-                    const value = jsonParse(valueStr);
-                    const msg = validateAll(
-                      dotKeysToKey[dotKey] as SettingsKey,
-                      value,
-                      new EnglishTranslations()
-                    ); // todo nach new EnglishTranslations() suchen
-                    if (typeof msg === 'string') {
-                      results.push({
-                        setting,
-                        msg: `Value (${valueStr}) is not valid for this setting. ${msg}`
-                      });
-                      continue;
-                    }
-                  } catch (e) {
-                    if (e instanceof SyntaxError) {
-                      results.push({
-                        setting,
-                        msg: `Could not parse value (${valueStr}).`
-                      });
-                      continue;
-                    } else throw e;
-                  }
-                }
-                throwErrrorsIfExist(results);
-
-                return true;
               });
           }
         )

@@ -1,8 +1,6 @@
 import { Options } from '../args';
-import { inject, injectable } from 'inversify';
-import { CommandConfig } from '../config';
+import { CommandConfig } from '../config/config2';
 
-@injectable()
 export abstract class Command<TConfig extends keyof CommandConfig=never> {
   abstract readonly usingNoRemoteApis:boolean;
   abstract readonly requestConfig: { [K in TConfig]: boolean };

@@ -1,15 +1,12 @@
-import { injectable, inject } from 'inversify';
 import { Command } from '../command';
 import { FlashOptions } from '../../args';
-import { LOWTYPES } from '../../ioc/types';
 import { flash } from '../../flash';
 
-@injectable()
-export class FlashCommand extends Command {
+export default class FlashCommand extends Command {
   readonly requestConfig = {};
   readonly usingNoRemoteApis = true;
-  
-  constructor(@inject(LOWTYPES.Options) private options: FlashOptions) {
+
+  constructor(private options: FlashOptions) {
     super('flash');
   }
 

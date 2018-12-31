@@ -1,9 +1,10 @@
 const path = require('path')
 const CleanWebpackPlugin = require('clean-webpack-plugin');
 const fs = require('fs');
-const keysTransformer = require('./common/node_modules/ts-transformer-keys/transformer').default;
+const keysTransformer = require('ts-transformer-keys/transformer').default;
 const webpack = require('webpack');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 const nodeModules = {};
 fs.readdirSync(path.resolve(__dirname, 'node_modules'))
@@ -66,7 +67,8 @@ module.exports = (env, options) => {
                 },
             ]
         },
-        plugins: [
+        plugins: [    
+            // new BundleAnalyzerPlugin(),
             new CleanWebpackPlugin(outDir),
             new webpack.BannerPlugin({
                 banner:"require('source-map-support').install();",

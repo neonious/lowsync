@@ -1,31 +1,30 @@
 import { preparePostData } from '@common/src/common/miscUtil';
 import { isJavascriptFile } from '@common/src/common/pathUtil';
-import {
-  WebdavNoProgressOptions,
-  WebdavService
-} from '@common/src/services/http/webdav';
 import * as assert from 'assert';
+import * as cliProgress from 'cli-progress';
 import * as fs from 'fs-extra';
-import { getStatusText } from 'http-status-codes';
 import * as path from 'path';
-import { GetRequestError } from '@common/src/services/http/webdav';
+import {
+  createDirectory,
+  deleteFile,
+  putBinaryFile,
+  getBinaryFile
+} from '../../../../../common/src/http/webdav';
 import { RunError } from '../../../../runError';
+import { FsFileStat } from '../fsStat';
+import FsStructure, {
+  FsAnyStructure,
+  getStatFromStructure,
+  getSubStructure,
+  setInStructure
+} from '../fsStructure';
+import { saveSyncDataFile } from '../syncDataFile';
 import { osRelPathToRootedPosix } from '../util';
 import { SyncFile } from './syncFile';
+import { McHttpError } from '../../../../../common/src/http/mcHttpError';
 const babel = require('babel-core');
-import rimraf = require('rimraf');
-import * as cliProgress from 'cli-progress';
-import FsStructure, { setInStructure, FsAnyStructure, getStatFromStructure, getSubStructure } from '../fsStructure';
-import { saveSyncDataFile } from '../syncDataFile';
-import { FsFileStat } from '../fsStat';
+const rimraf = require('rimraf');
 
-function getStatusTextNoError(status: number) {
-  try {
-    getStatusText(status);
-  } catch {
-    return null;
-  }
-}
 export class SyncToLocalError extends Error {
   constructor(
     public readonly path: string,
@@ -86,15 +85,14 @@ function transpileJavaScript(
 
 export function getFileSynchronizer(
   rootDir: string,
-  webdavService: WebdavService,
   noTranspile: boolean,
-  base:FsStructure,
-  remote:FsStructure,
-  local:FsStructure,
-  syncFilePath:string
+  base: FsStructure,
+  remote: FsStructure,
+  local: FsStructure,
+  syncFilePath: string
 ) {
-  async function dirToPc(relPath:string) {
-    const {fullPath}=getPaths(relPath);
+  async function dirToPc(relPath: string) {
+    const { fullPath } = getPaths(relPath);
     try {
       await fs.mkdirp(fullPath);
     } catch (e) {
@@ -104,33 +102,14 @@ export function getFileSynchronizer(
         e
       );
     }
-    await setInStructureFromRelPath(relPath,{type:"dir",content:{}});
+    await setInStructureFromRelPath(relPath, { type: 'dir', content: {} });
   }
 
-  async function fileToPc(relPath:string) {
-    const {posixPath,fullPath}=getPaths(relPath);
-    const result = await webdavService.findBinaryFile(posixPath);
-    if (result instanceof GetRequestError) {
-      throw new SyncToLocalError(posixPath, `Could not get file from remote.`);
-    }
-    const { status, data } = result;
-    if (!status.toString().startsWith('2')) {
-      const statusText = getStatusTextNoError(status);
-      throw new SyncToLocalError(
-        posixPath,
-        `Could not get file from remote. The remote returned the status code ${status}${
-          statusText ? ` (${statusText})` : ''
-        }.`
-      );
-    }
-    if (!data) {
-      throw new SyncToLocalError(
-        posixPath,
-        `The remote did not return any data for the file.`
-      );
-    }
+  async function fileToPc(relPath: string) {
+    const { posixPath, fullPath } = getPaths(relPath);
+    const data = await getBinaryFile(posixPath);
     try {
-      await fs.writeFile(fullPath, data);
+      await fs.writeFile(fullPath, data.arrayBuffer);
     } catch (e) {
       throw new SyncToLocalError(
         fullPath,
@@ -138,53 +117,31 @@ export function getFileSynchronizer(
         e
       );
     }
-    const sub = getSubStructure(remote,relPath);
-    const {md5,size} = getStatFromStructure(relPath,sub) as FsFileStat;
-    await setInStructureFromRelPath(relPath,{type:'file',md5,size});
+    const sub = getSubStructure(remote, relPath);
+    const { md5, size } = getStatFromStructure(relPath, sub) as FsFileStat;
+    await setInStructureFromRelPath(relPath, { type: 'file', md5, size });
   }
 
-  function getPaths(relPath:string){
+  function getPaths(relPath: string) {
     const posixPath = osRelPathToRootedPosix(relPath);
-      const fullPath = path.join(rootDir, relPath);
-      return {posixPath,fullPath};
+    const fullPath = path.join(rootDir, relPath);
+    return { posixPath, fullPath };
   }
 
-  async function dirToMc(relPath:string) {
-      const {posixPath}=getPaths(relPath);
-    try {
-      await webdavService.createDirectory(posixPath);
-    } catch (e) {
-      throw new SyncToRemoteError(
-        posixPath,
-        'Failed to create folder on remote.',
-        e
-      );
-    }
-    await setInStructureFromRelPath(relPath,{type:"dir",content:{}});
+  async function dirToMc(relPath: string) {
+    const { posixPath } = getPaths(relPath);
+    await createDirectory(posixPath);
+    await setInStructureFromRelPath(relPath, { type: 'dir', content: {} });
   }
 
-  async function fileToMc(relPath:string) {
-      const {posixPath,fullPath}=getPaths(relPath);
-      let data;
+  async function fileToMc(relPath: string) {
+    const { posixPath, fullPath } = getPaths(relPath);
+    let data;
     try {
       data = await fs.readFile(fullPath);
     } catch (e) {
       throw new SyncToRemoteError(fullPath, 'Failed to read file on PC.', e);
     }
-    const putBinaryFile = async (
-      data: Uint8Array,
-      options: WebdavNoProgressOptions = {}
-    ) => {
-      try {
-        await webdavService.putBinaryFile(posixPath, data, { ...options });
-      } catch (e) {
-        throw new SyncToRemoteError(
-          posixPath,
-          'Failed to transfer file to remote.',
-          e
-        );
-      }
-    };
     if (isJavascriptFile(path.basename(fullPath)) && !noTranspile) {
       const source = data.toString();
       const { compiled, map } = transpileJavaScript(source);
@@ -195,37 +152,42 @@ export function getFileSynchronizer(
         createUint8Array(compiled),
         createUint8Array(map)
       );
-      await putBinaryFile(buffer, { headers });
+      await putBinaryFile(posixPath, buffer, { headers });
     } else {
       if (data.byteLength === 0) {
-        await putBinaryFile(null as any); // todo
+        await putBinaryFile(posixPath, null as any); // todo
       } else {
-        await putBinaryFile(data);
+        await putBinaryFile(posixPath, data);
       }
     }
-    const sub = getSubStructure(local,relPath);
-    const {md5,size} = getStatFromStructure(relPath,sub) as FsFileStat;
-    await setInStructureFromRelPath(relPath,{type:'file',md5,size});
+    const sub = getSubStructure(local, relPath);
+    const { md5, size } = getStatFromStructure(relPath, sub) as FsFileStat;
+    await setInStructureFromRelPath(relPath, { type: 'file', md5, size });
   }
 
-  async function setInStructureFromRelPath(relPath:string,
-    statStruct: FsAnyStructure){
-      setInStructure(base,relPath,statStruct);
-      await saveSyncDataFile(syncFilePath, base);
-    }
+  async function setInStructureFromRelPath(
+    relPath: string,
+    statStruct: FsAnyStructure
+  ) {
+    setInStructure(base, relPath, statStruct);
+    await saveSyncDataFile(syncFilePath, base);
+  }
 
   return async function(files: SyncFile[]) {
-    const bar = new cliProgress.Bar({
+    const bar = new cliProgress.Bar(
+      {
         format: '{file} |{bar}| {percentage}%',
         stream: process.stdout,
         barsize: 30
-    }, cliProgress.Presets.shades_classic);
-    bar.start(files.length, 0, {file:'Preparing synchronization...'});
+      },
+      cliProgress.Presets.shades_classic
+    );
+    bar.start(files.length, 0, { file: 'Preparing synchronization...' });
 
-    let val=0;
+    let val = 0;
     for (const file of files) {
-      bar.update(val,{file:`Synchronizing: ${file.relPath}`});
-      const {posixPath,fullPath}=getPaths(file.relPath);
+      bar.update(val, { file: `Synchronizing: ${file.relPath}` });
+      const { posixPath, fullPath } = getPaths(file.relPath);
       switch (file.destside) {
         case 'pc': {
           try {
@@ -247,9 +209,11 @@ export function getFileSynchronizer(
                 if (await fs.pathExists(fullPath)) {
                   try {
                     await new Promise((resolve, reject) =>
-                      rimraf(fullPath, err => (err ? reject(err) : resolve()))
+                      rimraf(fullPath, (err:any) => (err ? reject(err) : resolve()))
                     );
-                    await setInStructureFromRelPath(file.relPath,{type:"non-existing"}); 
+                    await setInStructureFromRelPath(file.relPath, {
+                      type: 'non-existing'
+                    });
                   } catch (e) {
                     throw new SyncToLocalError(
                       fullPath,
@@ -267,6 +231,11 @@ export function getFileSynchronizer(
                 `Error syncing file/folder to the PC. ${e.message} Path: ${
                   e.path
                 }`,
+                e
+              );
+            } else if (e instanceof McHttpError) {
+              throw new RunError(
+                `Error syncing file/folder to the PC. ${e.message}`,
                 e
               );
             }
@@ -292,8 +261,10 @@ export function getFileSynchronizer(
               }
               case 'remove': {
                 try {
-                  await webdavService.deleteFile(posixPath);
-                  await setInStructureFromRelPath(file.relPath,{type:"non-existing"}); 
+                  await deleteFile(posixPath);
+                  await setInStructureFromRelPath(file.relPath, {
+                    type: 'non-existing'
+                  });
                 } catch (e) {
                   throw new SyncToRemoteError(
                     posixPath,
@@ -312,6 +283,13 @@ export function getFileSynchronizer(
                 } Path: ${e.path}`,
                 e
               );
+            } else if (e instanceof McHttpError) {
+              throw new RunError(
+                `Error syncing file/folder to the microcontroller. ${
+                  e.message
+                }`,
+                e
+              );
             }
             throw e;
           }
@@ -320,7 +298,7 @@ export function getFileSynchronizer(
       }
       val++;
     }
-    bar.update(val,{file:`Synchronization complete`});
+    bar.update(val, { file: `Synchronization complete` });
     bar.stop();
   };
 }

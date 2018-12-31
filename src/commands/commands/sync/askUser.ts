@@ -1,12 +1,12 @@
 import { maxBy } from 'lodash';
 import { rpad } from 'underscore.string';
 import { AskUserAction } from './initialAction';
-import inquirer = require('inquirer');
+import * as inquirer from 'inquirer';
 import FinalAction, { SyncActionType } from './synchronize/finalAction';
 import { FsAnyStat } from './fsStat';
 import { osRelPathToRootedPosix } from './util';
 
-const prompt = inquirer.createPromptModule();
+
 
 class ConsoleColumns {
   private numCols?: number;
@@ -138,7 +138,7 @@ export default async function askUser({ actions }: AskUserOptions) {
         value: 'skip'
       }
     ];
-
+    const prompt = inquirer.createPromptModule();
     const { action } = await prompt<{ action: Value }>({
       name: 'action',
       type: 'list',

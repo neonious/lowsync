@@ -1,15 +1,11 @@
-import { HttpApiService } from '@common/src/services/http/api';
-import { TYPES } from '@common/src/types';
-import { inject, injectable } from 'inversify';
 import { Command } from '../command';
+import { httpApi } from '../../../common/src/http/httpApiService';
 
-@injectable()
-export class StatusCommand extends Command {
+export default class StatusCommand extends Command {
   readonly requestConfig = {};
   readonly usingNoRemoteApis = false;
 
   constructor(
-    @inject(TYPES.HttpApiService) private httpApiService: HttpApiService
   ) {
     super('status');
   }
@@ -17,7 +13,7 @@ export class StatusCommand extends Command {
   async run() {
     const {
       code: { status }
-    } = await this.httpApiService.Status({ code: true });
+    } = await httpApi.Status({ code: true });
 
     let statusStr: string;
 

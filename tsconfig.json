@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "module": "commonjs",
+        "module": "esnext",
         "strict": true,
         "moduleResolution": "node",
         "outDir": "build",
@@ -17,9 +17,7 @@
 			]
         },
         "jsx": "react",
-        "experimentalDecorators": true,
         "mapRoot": "build",
-        "emitDecoratorMetadata": true,
         "strictFunctionTypes": false // commented out cuz rxjs typings give compile error in virtualtimescheduler.d.ts. until they update their lib, no strictFunctionTypes for us
     },
     "include": [

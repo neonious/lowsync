@@ -1,43 +1,20 @@
-import fs = require('fs-extra');
-import inquirer = require('inquirer');
-import {
-  InitOptions,
-  StatusOptions,
-  StartOptions,
-  UpdateOptions,
-  StopOptions
-} from '../../args';
-import { isUndefined } from 'util';
-import { extname } from 'path';
-import replaceExt = require('replace-ext');
-import { ArgumentOutOfRangeError } from 'rxjs';
+import * as inquirer from 'inquirer';
+import { httpApi } from '../../../common/src/http/httpApiService';
+import { StartOptions } from '../../args';
 import { RunError } from '../../runError';
 import { Command } from '../command';
-import { injectable, inject, multiInject, Container } from 'inversify';
-import * as prettyjson from 'prettyjson';
-import { StopCommand } from './stop';
-import { LOWTYPES } from '../../ioc/types';
-import { TYPES } from '@common/src/types';
-import { HttpApiService } from '@common/src/services/http/api';
-import { toFlatStructure } from '../../../common/src/settings/util';
 
-const prompt = inquirer.createPromptModule();
-
-@injectable()
-export class StartCommand extends Command {
+export default class StartCommand extends Command {
   readonly requestConfig = {};
   readonly usingNoRemoteApis = false;
-  
-  constructor(
-    @inject(LOWTYPES.Options) private options: StartOptions,
-    @inject(TYPES.HttpApiService) private httpApiService: HttpApiService
-  ) {
+
+  constructor(private options: StartOptions) {
     super('start');
   }
 
   async run() {
     const { file, force } = this.options;
-    let result = await this.httpApiService.Start({ action: 'start', file });
+    let result = await httpApi.Start({ action: 'start', file });
     switch (result) {
       case 'UPDATING_SYS':
         throw new RunError(
@@ -50,6 +27,7 @@ export class StartCommand extends Command {
         if (force) {
           doRestart = true;
         } else {
+          const prompt = inquirer.createPromptModule();
           const { restart } = await prompt<{ restart: boolean }>({
             name: 'restart',
             type: 'confirm',
@@ -60,8 +38,8 @@ export class StartCommand extends Command {
           doRestart = restart;
         }
         if (doRestart) {
-          await this.httpApiService.Stop();
-          const result = await this.httpApiService.Start({
+          await httpApi.Stop();
+          const result = await httpApi.Start({
             action: 'start',
             file
           });

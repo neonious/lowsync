@@ -1,43 +1,25 @@
-import fs = require('fs-extra');
-import { ipAddress } from '@common/src/common/regexConst';
-import { spawn } from 'child_process';
-import { injectable, inject } from 'inversify';
-import { extname, join, relative } from 'path';
-import { isUndefined } from 'util';
-import {
-  CommandConfig,
-  ConfigFile,
-  CommandConfigOpts,
-  RemoteAccessConfig,
-  RemoteAccessOpts
-} from '../../config';
-import { RunError } from '../../runError';
+import { extname } from 'path';
 import { Command } from '../command';
-import inquirer = require('inquirer');
-import replaceExt = require('replace-ext');
-import { InitOptions } from '../../args';
-import { LOWTYPES } from '../../ioc/types';
+import * as inquirer from 'inquirer';
+const replaceExt = require('replace-ext');
+import { configFile, createNewConfig } from '../../config/configFile';
+import { Config } from '../../config/base/config';
+import { remoteAccessOpts } from '../../config/remoteAccessOpts';
+import { commandConfigOpts } from '../../config/commandConfigOpts';
 
-const prompt = inquirer.createPromptModule();
-
-@injectable()
-export class InitCommand extends Command {
+export default class InitCommand extends Command {
   readonly requestConfig = {};
   readonly usingNoRemoteApis = true;
 
-  constructor(
-    @inject(LOWTYPES.ConfigFile) private configFile: ConfigFile,
-    @inject(LOWTYPES.CommandConfig) private commandConfig: CommandConfigOpts,
-    @inject(LOWTYPES.RemoteAccessConfig)
-    private remoteAccessConfig: RemoteAccessOpts
-  ) {
+  constructor() {
     super('init');
   }
 
   async run() {
-    let useConfigFile: ConfigFile | undefined;
+    let useConfigFile: Config<any> | undefined;
 
-    if (await this.configFile.exists()) {
+    if (await configFile.exists()) {
+      const prompt = inquirer.createPromptModule();
       const { action } = (await prompt({
         name: 'action',
         type: 'list',
@@ -57,18 +39,18 @@ export class InitCommand extends Command {
       })) as any;
 
       if (action === 'replace') {
-        await this.configFile.moveTo(
+        await configFile.moveTo(
           replaceExt(
-            this.configFile.file,
-            `.old.${Date.now()}${extname(this.configFile.file)}`
+            configFile.file,
+            `.old.${Date.now()}${extname(configFile.file)}`
           )
         );
-        useConfigFile = new ConfigFile();
+        useConfigFile = createNewConfig();
       }
     } else {
-      useConfigFile = new ConfigFile();
+      useConfigFile = createNewConfig();
     }
-    await this.remoteAccessConfig.init(useConfigFile);
-    await this.commandConfig.init(useConfigFile);
+    await remoteAccessOpts.init(useConfigFile);
+    await commandConfigOpts.init(useConfigFile);
   }
 }

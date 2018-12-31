@@ -1,10 +1,9 @@
-import { HostPrefixHandler } from "@common/src/hooks/hostPrefix";
-import { HttpService } from "@common/src/services/http/http";
 import * as path from "path";
 import { parseString } from "xml2js";
 import * as assert from "assert";
 import matchesAnyGlob from './matchesAnyGlob';
 import { FsStat } from '..';
+import { send } from '../../../../../../common/src/http/mcHttp';
 
 interface Response {
   href: string;
@@ -38,26 +37,22 @@ function matchesAnySubpath(relPath: string, globs: string[]) {
 }
 
 export interface GetRemoteFilesOptions {
-  httpService: HttpService;
-  hostPrefixHandler: HostPrefixHandler;
   excludeGlobs: string[];
 }
 
 export default async function getRemoteFiles({
-  httpService,
-  hostPrefixHandler,
   excludeGlobs
 }: GetRemoteFilesOptions) {
-  const { requestPromise } = httpService.send({
+  const { responseText, headers } = await send({
     method: "PROPFIND",
-    url: `${hostPrefixHandler.hostPrefix}/fs`,
+    url: `/fs`,
     headers: {
       "Content-Type": "application/xml;charset=UTF-8",
       "lowrmt-md5": "1",
     }
   }); // todo error handling here too
-  const { responseText, headers } = await requestPromise;
-  const hadPut = headers['lowrmt-had-put']==='1';
+ 
+  const hadPut = (headers as any)['lowrmt-had-put']==='1';
   const result = await new Promise<PropfindData>((resolve, reject) => {
     parseString(responseText, { explicitArray: false }, (err, result) => {
       if (err) {

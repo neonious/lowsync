@@ -1,79 +1,68 @@
-import { AuthenticationService } from '@common/src/services/authentication/authentication';
-import { TYPES } from '@common/src/types';
-import { inject, injectable, multiInject } from 'inversify';
-import { Options } from './args';
-import { Command } from './commands/command';
-import {
-  CommandConfig,
-  CommandConfigOpts,
-  RemoteAccessOpts,
-  AuthOpts,
-  AuthConfigFile,
-  ConfigFile
-} from './config';
-import { LOWTYPES } from './ioc/types';
 import chalk from 'chalk';
+import { Options } from './args';
 import { RunError } from './runError';
+import { configFile } from './config/configFile';
+import { CommandConfig } from './config/config2';
+import { authConfigFile } from './config/authConfigFile';
+import { commandConfigOpts } from './config/commandConfigOpts';
+import { authOpts } from './config/authOpts';
+import { remoteAccessOpts } from './config/remoteAccessOpts';
 
-@injectable()
 export class Program {
-  constructor(
-    @inject(LOWTYPES.Options) private options: Options,
-    @multiInject(LOWTYPES.Commands) private commands: Command[],
-    @inject(TYPES.AuthenticationService)
-    private authenticationService: AuthenticationService,
-    @inject(LOWTYPES.CommandConfig) private commandConfig: CommandConfigOpts,
-    @inject(LOWTYPES.AuthConfig) private authConfig: AuthOpts,
-    @inject(LOWTYPES.RemoteAccessConfig)
-    private remoteAccessConfig: RemoteAccessOpts,
-    @inject(LOWTYPES.ConfigFile) private configFile: ConfigFile,
-    @inject(LOWTYPES.AuthConfigFile)
-    private authConfigFile: AuthConfigFile
-  ) {}
+  constructor(private options: Options) {}
 
   async run() {
-   
-    const command = this.commands.find(c => c.command === this.options.type)!;
+    
+    const type = this.options.type;
+    const Command = (await import(`./commands/commands/${type}`)).default;
+    const command = new Command(this.options);
     const errors = [];
     const doLogin = !command.usingNoRemoteApis;
-    const configKeys = Object.keys(command.requestConfig) as (keyof CommandConfig)[];
-    if ((configKeys.length||doLogin) && !await this.configFile.exists()){
-      throw new RunError('A configuration file does not exist yet. Please run lowsync init to create one first.');
+    const configKeys = Object.keys(
+      command.requestConfig
+    ) as (keyof CommandConfig)[];
+    if ((configKeys.length || doLogin) && !(await configFile.exists())) {
+      throw new RunError(
+        'A configuration file does not exist yet. Please run lowsync init to create one first.'
+      );
     }
     const unknownErrs = [];
-    unknownErrs.push(...(await this.configFile.unknownConfigKeyErrors()));
-    unknownErrs.push(...(await this.authConfigFile.unknownConfigKeyErrors()));
+    unknownErrs.push(...(await configFile.unknownConfigKeyErrors()));
+    unknownErrs.push(...(await authConfigFile.unknownConfigKeyErrors()));
     for (const err of unknownErrs) {
       console.warn(chalk.hex('#ffa500').bold(err));
     }
     if (doLogin) {
-      errors.push(...(await this.remoteAccessConfig.getErrors()));
-      errors.push(...(await this.authConfig.getErrors()));
+      errors.push(...(await remoteAccessOpts.getErrors()));
+      errors.push(...(await authOpts.getErrors()));
     }
-    errors.push(...(await this.commandConfig.getErrors(configKeys)));
-
-    if (doLogin) {
-      await this.remoteAccessConfig.askUser();
-      await this.authConfig.askUser();
+    errors.push(...(await commandConfigOpts.getErrors(configKeys)));
+    if (doLogin){
+      await remoteAccessOpts.askUser();
+      await authOpts.askUser();
     }
     if (errors.length) {
       const msg = errors.map(e => chalk.white.bgRed.bold(e)).join('\n');
       throw new RunError(msg);
     }
 
-    await this.commandConfig.askUser(configKeys);
+    await commandConfigOpts.askUser(configKeys);
 
-    command.config = await this.commandConfig.getConfig(configKeys);
+    command.config = await commandConfigOpts.getConfig(configKeys);
 
     if (doLogin) {
-      const { password } = await this.authConfig.getConfig();
-      await this.authenticationService.tryLogin(password);
+      const { password } = await authOpts.getConfig();
+      const {
+        tryLogin,
+        logout
+      } = await import('../common/src/services/authentication/authentication');
+      await tryLogin(password);
       try {
         await command.run();
       } finally {
         if (command.command !== 'update' && command.command !== 'monitor')
           // todo because update also logs out (UpdateAndLogout api method)
-          await this.authenticationService.logout();
+          await logout();
       }
     } else {
       await command.run();

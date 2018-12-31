@@ -1,46 +1,32 @@
-import { HostPrefixHandler } from '@common/src/hooks/hostPrefix';
-import { HttpService } from '@common/src/services/http/http';
-import { WebdavService } from '@common/src/services/http/webdav';
-import { TYPES } from '@common/src/types';
-import { inject, injectable } from 'inversify';
-import { cloneDeep } from 'lodash';
-import * as path from 'path';
+import { httpApi } from '../../../common/src/http/httpApiService';
 import { SyncOptions } from '../../args';
-import { LOWTYPES } from '../../ioc/types';
 import { RunError } from '../../runError';
+import { getExistingOrNewConfigPath } from '../../util';
 import { Command } from '../command';
 import askUser from './sync/askUser';
 import getLocalFiles from './sync/fsStat/files/local';
 import getRemoteFiles from './sync/fsStat/files/remote';
 import FsStructure, {
-  setInStructure,
+  FsStatStructure,
   getSubStructure,
-  toStructure,
-  FsStatStructure
+  setInStructure,
+  toStructure
 } from './sync/fsStructure';
 import getInitialActions from './sync/getInitialActions';
 import { isAskUserAction, isFinalAction } from './sync/initialAction';
 import { loadSyncDataFile, saveSyncDataFile } from './sync/syncDataFile';
 import FinalAction from './sync/synchronize/finalAction';
-import fs = require('fs-extra');
-import * as assert from 'assert';
-import { HttpApiService } from '@common/src/services/http/api';
-import inquirer = require('inquirer');
-import {
-  SyncFileFakeRemove,
-  SyncFile,
-  getFileSynchronizer,
-  SyncFileAdd
-} from './sync/synchronize/syncFile';
 import { getFilesToSynchronize } from './sync/synchronize/getFilesToSynchronize';
-import { relative, join } from 'path';
-import * as findUp from 'find-up';
-import { getExistingOrNewConfigPath } from '../../util';
+import {
+  getFileSynchronizer,
+  SyncFile,
+  SyncFileAdd,
+  SyncFileFakeRemove
+} from './sync/synchronize/syncFile';
+import * as fs from 'fs-extra';
+import * as inquirer from 'inquirer';
 
-const prompt = inquirer.createPromptModule();
-
-@injectable()
-export class SyncCommand extends Command<'syncDir' | 'transpile' | 'exclude'> {
+export default class SyncCommand extends Command<'syncDir' | 'transpile' | 'exclude'> {
   readonly requestConfig = { syncDir: true, transpile: true, exclude: true };
   readonly usingNoRemoteApis = false;
 
@@ -53,19 +39,12 @@ export class SyncCommand extends Command<'syncDir' | 'transpile' | 'exclude'> {
     ];
   }
 
-  constructor(
-    @inject(LOWTYPES.Options) private options: SyncOptions,
-    @inject(TYPES.HttpApiService) private httpApiService: HttpApiService,
-    @inject(TYPES.WebdavService) private webdavService: WebdavService,
-    @inject(TYPES.HttpService) private httpService: HttpService,
-    @inject(TYPES.HostPrefixHandler)
-    private hostPrefixHandler: HostPrefixHandler,
-  ) {
+  constructor(private options: SyncOptions) {
     super('sync');
   }
 
   private get syncFilePath(): string {
-    return getExistingOrNewConfigPath('lowsync.sync.config.json')
+    return getExistingOrNewConfigPath('lowsync.sync.config.json');
   }
 
   private async updateBase(
@@ -74,13 +53,9 @@ export class SyncCommand extends Command<'syncDir' | 'transpile' | 'exclude'> {
     base: FsStructure
   ) {
     for (const action of actions) {
-      if (action.type==='updateBase'){
+      if (action.type === 'updateBase') {
         const subStruct = getSubStructure(local, action.relativePath);
-        setInStructure(
-          base,
-          action.relativePath,
-          subStruct as FsStatStructure
-        );
+        setInStructure(base, action.relativePath, subStruct as FsStatStructure);
       }
     }
     await saveSyncDataFile(this.syncFilePath, base);
@@ -90,7 +65,9 @@ export class SyncCommand extends Command<'syncDir' | 'transpile' | 'exclude'> {
     if (!(await fs.pathExists(this.config.syncDir))) {
       await fs.mkdirp(this.config.syncDir);
       console.log(
-        `Created directory '${this.config.syncDir}' because it does not exist yet.`
+        `Created directory '${
+          this.config.syncDir
+        }' because it does not exist yet.`
       );
     } else {
       const stat = await fs.stat(this.config.syncDir);
@@ -115,9 +92,10 @@ export class SyncCommand extends Command<'syncDir' | 'transpile' | 'exclude'> {
   }
 
   async run() {
+    const prompt = inquirer.createPromptModule();
     const {
       code: { status }
-    } = await this.httpApiService.Status({ code: true });
+    } = await httpApi.Status({ code: true });
 
     let startAfterSync = false;
     if (status !== 'stopped') {
@@ -131,7 +109,7 @@ export class SyncCommand extends Command<'syncDir' | 'transpile' | 'exclude'> {
       if (restart) {
         startAfterSync = true;
         console.log('Stopping program...');
-        await this.httpApiService.Stop();
+        await httpApi.Stop();
         console.log('Syncing...');
       }
     }
@@ -147,9 +125,7 @@ export class SyncCommand extends Command<'syncDir' | 'transpile' | 'exclude'> {
     const localFileStruct = toStructure(localFiles);
 
     const { stats: remoteFiles, hadPut } = await getRemoteFiles({
-      excludeGlobs: this.exclude,
-      httpService: this.httpService,
-      hostPrefixHandler: this.hostPrefixHandler
+      excludeGlobs: this.exclude
     });
     if (!hadPut) {
       const syncFileExists = await fs.pathExists(this.syncFilePath);
@@ -182,7 +158,7 @@ export class SyncCommand extends Command<'syncDir' | 'transpile' | 'exclude'> {
         await fs.unlink(this.syncFilePath);
       }
 
-      await this.httpApiService.SetLowSyncHadPut();
+      await httpApi.SetLowSyncHadPut();
     }
     const remoteFilesStruct = toStructure(remoteFiles);
 
@@ -203,11 +179,7 @@ export class SyncCommand extends Command<'syncDir' | 'transpile' | 'exclude'> {
     const syncLog: SyncFile[] = [];
     const fakeSyncLog: SyncFileFakeRemove[] = [];
 
-    await this.updateBase(
-      finalActions,
-      localFileStruct,
-      baseFilesStruct
-    );
+    await this.updateBase(finalActions, localFileStruct, baseFilesStruct);
 
     if (
       !finalActions.filter(
@@ -226,7 +198,6 @@ export class SyncCommand extends Command<'syncDir' | 'transpile' | 'exclude'> {
 
       const synchronizer = getFileSynchronizer(
         this.config.syncDir,
-        this.webdavService,
         !this.doTranspile,
         baseFilesStruct,
         remoteFilesStruct,
@@ -251,7 +222,7 @@ export class SyncCommand extends Command<'syncDir' | 'transpile' | 'exclude'> {
 
     if (startAfterSync) {
       console.log('Restarting program...');
-      let result = await this.httpApiService.Start({ action: 'start' });
+      let result = await httpApi.Start({ action: 'start' });
       if (result === 'FILE_NOT_FOUND') {
         throw new RunError(`The file to start does not exist.`);
       } else if (result) {
