@@ -19,7 +19,7 @@ Description
 
 Set one or more settings.
 
-See the :doc:`/commands/commands/settings/set` command for available settings.
+See the `lowjs settings reference <https://www.lowjs.org/documentation/lowjs-settings.html>`_ for available settings or run the :doc:`/commands/commands/settings/show` command to show all currently set values.
 
 Options
 ==================

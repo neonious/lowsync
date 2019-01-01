@@ -1,0 +1,10 @@
+{
+    "base":"tsconfig",
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "ES6"
+    },
+    "files": [
+        "gulpfile.ts"
+    ]
+}
