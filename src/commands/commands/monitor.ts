@@ -1,4 +1,4 @@
-import { ConsoleMessage } from '@common/src/services/consoleMessage/message';
+import { ConsoleMessage } from '@common/services/consoleMessage/message';
 import chalk from 'chalk';
 import { Command } from '../command';
 import { format } from '../../../common/src/services/consoleMessage/formatter';

@@ -1,16 +1,16 @@
-import { SettingsKey } from '@common/src/settings/definitions';
+import { SettingsKey } from '@common/settings/definitions';
 import {
   getDotKeyFromKey,
   getDotKeyMapping,
   toFlatStructure,
   toSettingsStructure,
   validateAll
-} from '@common/src/settings/util';
+} from '@common/settings/util';
 import {
   getTranslation,
   ValidationKey
-} from '@common/src/settings/validations';
-import { EnglishTranslations } from '@common/src/translations/en';
+} from '@common/settings/validations';
+import { EnglishTranslations } from '@common/translations/en';
 import { chain, mapKeys, maxBy, pickBy } from 'lodash';
 import { pad } from 'underscore.string';
 import { jsonParse, SettingsOptions } from '../../args';

@@ -48,7 +48,7 @@ module.exports = (env, options) => {
         resolve: {
             extensions: [".ts", ".tsx", ".js", ".json"],
             alias: {
-                "@common": path.resolve(__dirname, "common")
+                "@common": path.resolve(__dirname, "common", "src")
             }
         },
         module: {
@@ -92,6 +92,9 @@ module.exports = (env, options) => {
             new webpack.BannerPlugin({
                 banner: '#!/usr/bin/env node',
                 raw: true
+            }),
+            new webpack.EnvironmentPlugin({
+              TARGETWEB: 'false'
             })
         ]
     }

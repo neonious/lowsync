@@ -1,5 +1,5 @@
-import { preparePostData } from '@common/src/common/miscUtil';
-import { isJavascriptFile } from '@common/src/common/pathUtil';
+import { preparePostData } from '@common/common/miscUtil';
+import { isJavascriptFile } from '@common/common/pathUtil';
 import * as assert from 'assert';
 import * as cliProgress from 'cli-progress';
 import * as fs from 'fs-extra';
@@ -7,8 +7,8 @@ import * as path from 'path';
 import {
   createDirectory,
   deleteFile,
-  putBinaryFile,
-  getBinaryFile
+  getFile,
+  putFile,
 } from '../../../../../common/src/http/webdav';
 import { RunError } from '../../../../runError';
 import { FsFileStat } from '../fsStat';
@@ -107,7 +107,7 @@ export function getFileSynchronizer(
 
   async function fileToPc(relPath: string) {
     const { posixPath, fullPath } = getPaths(relPath);
-    const data = await getBinaryFile(posixPath);
+    const data = await getFile(posixPath);
     try {
       await fs.writeFile(fullPath, data.arrayBuffer);
     } catch (e) {
@@ -152,12 +152,12 @@ export function getFileSynchronizer(
         createUint8Array(compiled),
         createUint8Array(map)
       );
-      await putBinaryFile(posixPath, buffer, { headers });
+      await putFile(posixPath, buffer, { headers });
     } else {
       if (data.byteLength === 0) {
-        await putBinaryFile(posixPath, null as any); // todo
+        await putFile(posixPath, null as any); // todo
       } else {
-        await putBinaryFile(posixPath, data);
+        await putFile(posixPath, data);
       }
     }
     const sub = getSubStructure(local, relPath);
