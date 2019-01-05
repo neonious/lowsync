@@ -4,7 +4,6 @@ import { httpApi } from '../../../common/src/http/httpApiService';
 import { Status } from '../../../common/src/webSocket/types/status';
 import { RunError } from '../../runError';
 import { UpdateOptions } from '../../args';
-import { httpApiNew } from '../../config/remoteAccessOpts';
 
 async function showUpdate(info?: Status.Update.Update) {
   if (info) {
@@ -27,7 +26,7 @@ async function confirmUpdate() {
 }
 
 async function installUpdate(version: string) {
-  const { willUpdate } = await httpApiNew.UpdateAndLogout();
+  const { willUpdate } = await httpApi.UpdateAndLogout();
   if (willUpdate) {
     console.log(
       'The device is updating! The update process will be finished when the red light stops blinking!'
@@ -40,7 +39,7 @@ async function installUpdate(version: string) {
 }
 
 export default async function({ action }: UpdateOptions) {
-  const update = (await httpApiNew.GetUpdateInfo()).update || undefined;
+  const update = (await httpApi.GetUpdateInfo()).update || undefined;
 
   switch (action) {
     case 'show': {

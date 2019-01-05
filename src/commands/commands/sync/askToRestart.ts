@@ -1,7 +1,6 @@
 import * as inquirer from 'inquirer';
 import { httpApi } from '../../../../common/src/http/httpApiService';
 import { RunError } from '../../../runError';
-import { httpApiNew } from '../../../config/remoteAccessOpts';
 
 interface AskToRestartOptions {
   mcChanged: boolean;
@@ -16,7 +15,7 @@ export async function checkAndAskToRestart({
 
   const {
     code: { status }
-  } = await httpApiNew.Status({ code: true });
+  } = await httpApi.Status({ code: true });
 
   if (status !== 'stopped') {
     const prompt = inquirer.createPromptModule();
@@ -32,8 +31,8 @@ export async function checkAndAskToRestart({
         : { restart: autoRestart };
     if (restart) {
       console.log('Restarting program...');
-      await httpApiNew.Stop();
-      let result = await httpApiNew.Start({ action: 'start' });
+      await httpApi.Stop();
+      let result = await httpApi.Start({ action: 'start' });
       if (result === 'FILE_NOT_FOUND') {
         throw new RunError(`The file to start does not exist.`);
       } else if (result) {

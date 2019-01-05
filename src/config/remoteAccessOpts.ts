@@ -1,99 +1,127 @@
 import chalk from 'chalk';
+import { httpApi } from '../../common/src/http/httpApiService';
+import { HttpLikeOptions } from '../../common/src/http/httpLike';
 import {
-  setHostNameOrIp,
-  setPort,
-  setUseSsl
-} from '../../common/src/hooks/forbidden';
-import {
-  getHttpMethodInfo,
-  httpApi
-} from '../../common/src/http/httpApiService';
-import { McHttpError } from '../../common/src/http/mcHttpError';
-import { RunError } from '../runError';
-import { tryLogin } from './auth';
+  onBeforeEachHttp,
+  onBeforeHttp,
+  onHttpFail,
+  onHttpSuccess,
+  McHttpOptions
+} from '../../common/src/http/mcHttp';
+import { authConfigFile } from './authConfigFile';
 import { configFile } from './configFile';
 
-let done = false;
+let warnedNoPassword = false;
 
-export async function initHttp(callback: any) {
-  let url: string;
-  if (!done) {
-    let ip = await configFile.getKey('ip');
-    let port = await configFile.getKey('port');
-    let origPort = port;
-    let useHttp = await configFile.getKey('useHttp');
-    setUseSsl(!useHttp);
+export async function prepareHttp(
+  noSession: boolean
+): Promise<HttpLikeOptions> {
+  let ip = await configFile.getKey('ip');
+  let port = await configFile.getKey('port');
+  let useHttp = await configFile.getKey('useHttp');
+  const usePort = port === undefined ? (useHttp ? 8000 : 8443) : port;
 
-    do {
-      const protocol = useHttp ? 'http' : 'https';
-      const usePort = port === undefined ? (useHttp ? 8000 : 8443) : port;
-      url = `${protocol}://${ip}:${usePort}`;
-      let timer: any = setTimeout(() => {
-        console.log(
-          `Testing connection to microcontroller at ${url}... This can take a while if your connection is bad. If the url is incorrect, please abort lowsync and change the config file or run lowsync init.`
+  let options: Partial<HttpLikeOptions> = {
+    ip,
+    port: usePort,
+    ssl: !useHttp
+  };
+
+  if (!noSession) {
+    if (!warnedNoPassword) {
+      const { noPassword } = await httpApi.GetSoftwareVersion();
+      if (noPassword) {
+        console.warn(
+          chalk.keyword('orange')(
+            'A password was not set for the microcontroller. Please set a password via the lowsync settings set command.'
+          )
         );
-      }, 4000);
-      try {
-        setHostNameOrIp(ip);
-        setPort(usePort);
-
-        const { postJson } = await import('../../common/src/http/mcHttp');
-        await postJson({
-          url: `/api/IsLoggedIn`,
-          headers: {
-            SessionID: 'dummy_session_id'
-          },
-          timeout: 30_000,
-          noSession: true
-        });
-        done = true;
-        await configFile.setKey('ip', ip);
-        if (port !== origPort) await configFile.setKey('port', port);
-        await configFile.setKey('useHttp', useHttp);
-      } catch (e) {
-        if (e instanceof McHttpError) {
-          timer && clearTimeout(timer);
-          timer = null;
-          console.error(
-            chalk.red(
-              `The device cannot be reached with the provided protocol, IP and port (${url}).`
-            )
-          );
-          ip = await configFile.prompt('ip');
-          port = await configFile.prompt('port');
-        } else throw e;
-      } finally {
-        timer && clearTimeout(timer);
-        timer = null;
       }
-    } while (!done);
-  }
-
-  try {
-    return await callback();
-  } catch (e) {
-    if (e instanceof McHttpError) {
-      throw new RunError(
-        `The device cannot be reached with the provided protocol, IP and port (${url!}). (maybe a network problem). Please correct the problem in your configuration or delete it and run lowsync init`
-      );
+      warnedNoPassword = true;
     }
-    throw e;
+    let password = await authConfigFile.getKey('password');
+    options = {
+      ...options,
+      noSession: true,
+      password
+    };
   }
+  return options;
 }
 
-export const httpApiNew = new Proxy(
-  {},
-  {
-    get: function(target, method: keyof typeof httpApi) {
-      return function(...args: any[]) {
-        return initHttp(async () => {
-          const { noSession } = await getHttpMethodInfo();
-          if (!noSession.has(method)) {
-            await tryLogin();
-          }
-          return await (httpApi[method] as any)(...args);
-        });
-      };
-    }
+onBeforeHttp(async (options: MyOptions) => {
+  const opts = await prepareHttp(!!options.noSession);
+  return { ...options, ...opts };
+});
+
+interface MyOptions extends McHttpOptions {
+  timer: NodeJS.Timer | undefined;
+}
+
+onBeforeEachHttp(async (options: MyOptions) => {
+  const protocol = options.ssl ? 'https' : 'http';
+  const url = `${protocol}://${options.ip}:${options.port}`;
+  options.timer = setTimeout(() => {
+    console.log(
+      `Testing connection to microcontroller at ${url}... This can take a while if your connection is bad. If the url is incorrect, please abort lowsync and change the config file or run lowsync init.`
+    );
+  }, 4000);
+
+  return options;
+});
+
+onHttpSuccess(async (options: MyOptions) => {
+  if (options.headers && options.headers.Password)
+    await authConfigFile.setKey('password', options.headers.Password);
+  await configFile.setKey('ip', options.ip!);
+  await configFile.setKey('port', options.port!); // todo
+  await configFile.setKey('useHttp', !options.ssl);
+});
+
+export async function onFail<TOptions extends MyOptions>(
+  options: TOptions,
+  forbidden: boolean
+): Promise<TOptions | void> {
+  if (forbidden) {
+    let password = await authConfigFile.getKey('password');
+    const msg =
+      password === undefined
+        ? 'A password was not provided.'
+        : 'Wrong password.';
+    password = await authConfigFile.prompt('password', {
+      err: msg
+    });
+    options = {
+      ...options,
+      headers: {
+        ...options.headers,
+        Password: password!
+      }
+    };
+    return options;
   }
-) as typeof httpApi;
+
+  options.timer && clearTimeout(options.timer);
+  delete options.timer;
+  console.error(
+    chalk.red(
+      `The device cannot be reached with the provided protocol, IP and port (${
+        options.url
+      }).`
+    )
+  );
+  const ip = await configFile.prompt('ip');
+  const port = await configFile.prompt('port');
+  const useHttp = await configFile.prompt('useHttp');
+  options = {
+    ip,
+    port,
+    ssl: !useHttp,
+    ...options
+  };
+  return options;
+}
+
+onHttpFail((options: MyOptions, error, response) => {
+  return onFail(options, (response && response.status === 401) || false);
+});

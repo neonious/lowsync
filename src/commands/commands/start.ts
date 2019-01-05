@@ -2,10 +2,9 @@ import * as inquirer from 'inquirer';
 import { httpApi } from '../../../common/src/http/httpApiService';
 import { StartOptions } from '../../args';
 import { RunError } from '../../runError';
-import { httpApiNew } from '../../config/remoteAccessOpts';
 
 export default async function({ file, force }: StartOptions) {
-  let result = await httpApiNew.Start({ action: 'start', file });
+  let result = await httpApi.Start({ action: 'start', file });
   switch (result) {
     case 'UPDATING_SYS':
       throw new RunError(
@@ -29,8 +28,8 @@ export default async function({ file, force }: StartOptions) {
         doRestart = restart;
       }
       if (doRestart) {
-        await httpApiNew.Stop();
-        const result = await httpApiNew.Start({
+        await httpApi.Stop();
+        const result = await httpApi.Start({
           action: 'start',
           file
         });

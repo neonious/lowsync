@@ -27,7 +27,6 @@ import * as inquirer from 'inquirer';
 import { checkAndAskToRestart } from './sync/askToRestart';
 import { startMonitorPrompt } from './sync/startMonitorPrompt';
 import { configFile } from '../../config/configFile';
-import { httpApiNew } from '../../config/remoteAccessOpts';
 
 export default async function(options: SyncOptions) {
   const config = {
@@ -136,7 +135,7 @@ export default async function(options: SyncOptions) {
       await fs.unlink(syncFilePath());
     }
 
-    await httpApiNew.SetLowSyncHadPut();
+    await httpApi.SetLowSyncHadPut();
   }
   const remoteFilesStruct = toStructure(remoteFiles);
 

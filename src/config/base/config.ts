@@ -142,7 +142,7 @@ export class ConfigFile<TConfig> {
             validate: (value: string) => {
               return true; // todo
             }
-          });
+          }); // todo onforbidden für mchttp wieder rein
           result = value;
           break;
         }

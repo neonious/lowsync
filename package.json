@@ -70,6 +70,7 @@
     "@types/replace-ext": "0.0.27",
     "@types/request-promise-native": "^1.0.15",
     "@types/rimraf": "^2.0.2",
+    "@types/typescript": "^2.0.0",
     "@types/underscore.string": "0.0.32",
     "@types/webpack-bundle-analyzer": "^2.13.0",
     "@types/xml2js": "^0.4.3",
@@ -80,7 +81,7 @@
     "hard-source-webpack-plugin": "^0.12.0",
     "sudo-prompt": "^8.2.0",
     "ts-node": "^7.0.1",
-    "typescript": "^3.0.3",
+    "typescript": "^3.2.2",
     "webpack": "^4.17.1",
     "webpack-bundle-analyzer": "^3.0.3",
     "webpack-cli": "^3.1.0"

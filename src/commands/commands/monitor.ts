@@ -6,7 +6,9 @@ import {
 } from '../../../common/src/services/consoleMessage/formatter';
 import { getConsoleMessages } from '../../../common/src/services/consoleMessage/messages';
 import { padStart } from 'lodash';
-import { tryLogin } from '../../config/auth';
+import { httpApi } from '../../../common/src/http/httpApiService';
+import { prepareHttp } from '../../config/remoteAccessOpts';
+import { onBeforeWebsocket } from '../../../common/src/webSocket/socketPool';
 
 function writeConsole({ timestamp, level, lines }: ConsoleMessage) {
   const prefix = getTimestampPrefix(timestamp);
@@ -43,7 +45,11 @@ function writeConsole({ timestamp, level, lines }: ConsoleMessage) {
 }
 
 export default async function() {
-  await tryLogin();
+  await httpApi.IsLoggedIn(); // todo so that websocket works
+  const opts = await prepareHttp(false);
+  onBeforeWebsocket(options => {
+    return { ...options, ...opts };
+  });
   console.log(chalk.bold('Retrieving microcontroller output...'));
   getConsoleMessages().subscribe(msg => {
     writeConsole(msg);

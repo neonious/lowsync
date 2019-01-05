@@ -1,10 +1,9 @@
 import { httpApi } from '../../../common/src/http/httpApiService';
-import { httpApiNew } from '../../config/remoteAccessOpts';
 
 export default async function() {
   const {
     code: { status }
-  } = await httpApiNew.Status({ code: true });
+  } = await httpApi.Status({ code: true });
 
   let statusStr: string;
 
