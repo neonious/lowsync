@@ -21,6 +21,7 @@ export async function startMonitorPrompt({
       : { doMonitor: monitor };
   if (doMonitor) {
     console.log('Starting monitor...');
+    const MonitorCommand = (await import('../monitor')).default;
     await new MonitorCommand().run();
   }
 }
