@@ -45,6 +45,20 @@ Options
 
 Disables transpilation, which is enabled by default. Overrides the transpile option of the :doc:`configuration </configuration>`.
 
+.. code-block:: bash
+
+    --restart=true
+    --restart=false
+
+Enable or disable restarting the program after syncing, if any files were changed. Without this option the user will be prompted.
+
+.. code-block:: bash
+
+    --monitor=true
+    --monitor=false
+
+Enable or disable showing the live program output after syncing. Without this option the user will be prompted.
+
 Output
 ==================
 
