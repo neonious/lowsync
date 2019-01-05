@@ -59,6 +59,7 @@ export interface SyncOptions {
   type: 'sync';
   noTranspile?: boolean;
   restart?: boolean;
+  monitor?: boolean;
 }
 
 export interface MonitorOptions {
@@ -117,6 +118,12 @@ const argv1 = yargs
           default: undefined,
           describe:
             'Enable or disable restarting the program on the microcontroller if the sync operation has changed any files. If this option is not specified, the user will be asked.'
+        })
+        .option('monitor', {
+          type: 'boolean',
+          default: undefined,
+          describe:
+            'Enable or disable showing the output of the microcontroller after syncing. If this option is not specified, the user will be asked.'
         })
         .demandCommand(0, 0);
     }
@@ -258,8 +265,8 @@ if (flashidx !== -1) {
 unhook();
 
 function parseSyncOptions(argv: any): SyncOptions {
-  const { noTranspile, restart } = argv;
-  return { type: 'sync', noTranspile, restart };
+  const { noTranspile, restart, monitor } = argv;
+  return { type: 'sync', noTranspile, restart, monitor };
 }
 
 export function parseArguments(): Options {

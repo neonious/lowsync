@@ -26,6 +26,7 @@ import {
 import * as fs from 'fs-extra';
 import * as inquirer from 'inquirer';
 import { checkAndAskToRestart } from './sync/askToRestart';
+import { startMonitorPrompt } from './sync/startMonitorPrompt';
 
 export default class SyncCommand extends Command<
   'syncDir' | 'transpile' | 'exclude'
@@ -208,6 +209,10 @@ export default class SyncCommand extends Command<
     await checkAndAskToRestart({
       mcChanged,
       autoRestart: this.options.restart
+    });
+
+    await startMonitorPrompt({
+      monitor: this.options.monitor
     });
   }
 }
