@@ -1,12 +1,10 @@
 import { maxBy } from 'lodash';
 import { rpad } from 'underscore.string';
 import { AskUserAction } from './initialAction';
-import * as inquirer from 'inquirer';
 import FinalAction, { SyncActionType } from './synchronize/finalAction';
 import { FsAnyStat } from './fsStat';
 import { osRelPathToRootedPosix } from './util';
-
-
+import { promptList } from '../../../prompts';
 
 class ConsoleColumns {
   private numCols?: number;
@@ -32,18 +30,17 @@ class ConsoleColumns {
       maxColumnsLengths.push(rowWithMaxCol[col].length);
     }
 
-    let had=false;
+    let had = false;
     for (const row of this.rows) {
-    
       let printRowStr = '';
       for (let col = 0; col < row.length; col++) {
         const maxWidth = maxColumnsLengths[col];
         printRowStr += rpad(row[col], maxWidth + 2); // 2 for space between columns
       }
       writeFunction(printRowStr);
-      if (!had){
+      if (!had) {
         writeFunction(); // space between header and first real row
-        had=true;
+        had = true;
       }
     }
   }
@@ -118,34 +115,30 @@ export default async function askUser({ actions }: AskUserOptions) {
 
     type Value = SyncActionType | 'skip';
 
-    const choices: { name: string; value: Value }[] = [
-      {
-        name: `Overwrite microcontroller version with PC version (${[
-          'discards microcontroller changes',
-          ...getWarnings(local, remote)
-        ].join(', ')})`,
-        value: 'syncToRemote'
-      },
-      {
-        name: `Overwrite PC version with microcontroller version (${[
-          'discards PC changes',
-          ...getWarnings(remote, local)
-        ].join(', ')})`,
-        value: 'syncToLocal'
-      },
-      {
-        name: `Skip sync of this file/folder`,
-        value: 'skip'
-      }
-    ];
-    const prompt = inquirer.createPromptModule();
-    const { action } = await prompt<{ action: Value }>({
-      name: 'action',
-      type: 'list',
+    const action = await promptList<Value>({
       message: `How would you like to handle ${no}. ${normalizePath(
         relativePath
       )} ? (Use arrow keys)`,
-      choices
+      choices: [
+        {
+          name: `Overwrite microcontroller version with PC version (${[
+            'discards microcontroller changes',
+            ...getWarnings(local, remote)
+          ].join(', ')})`,
+          value: 'syncToRemote'
+        },
+        {
+          name: `Overwrite PC version with microcontroller version (${[
+            'discards PC changes',
+            ...getWarnings(remote, local)
+          ].join(', ')})`,
+          value: 'syncToLocal'
+        },
+        {
+          name: `Skip sync of this file/folder`,
+          value: 'skip'
+        }
+      ]
     });
 
     if (action !== 'skip') {

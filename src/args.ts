@@ -64,6 +64,7 @@ export interface SyncOptions {
 
 export interface MonitorOptions {
   type: 'monitor';
+  restart?: boolean;
 }
 
 export interface FlashOptions {
@@ -77,6 +78,16 @@ export interface UpdateOptions {
   action: 'show' | 'install';
 }
 
+export interface InstallOptions {
+  type: 'install';
+  packages: string[];
+}
+
+export interface UninstallOptions {
+  type: 'uninstall';
+  packages: string[];
+}
+
 export type Options =
   | InitOptions
   | SettingsOptions
@@ -86,7 +97,9 @@ export type Options =
   | SyncOptions
   | MonitorOptions
   | FlashOptions
-  | UpdateOptions;
+  | UpdateOptions
+  | InstallOptions
+  | UninstallOptions;
 
 export function jsonParse(str: string) {
   try {
@@ -117,13 +130,13 @@ const argv1 = yargs
           type: 'boolean',
           default: undefined,
           describe:
-            'Enable or disable restarting the program on the microcontroller if the sync operation has changed any files. If this option is not specified, the user will be asked.'
+            'Enable/disable (re)starting of the program if the filesystem on the microcontroller has changed. Optionally you may append =<true|false> to this option.'
         })
         .option('monitor', {
           type: 'boolean',
           default: undefined,
           describe:
-            'Enable or disable showing the output of the microcontroller after syncing. If this option is not specified, the user will be asked.'
+            'Enable/disable monitoring the program after sync. Implies --restart. Optionally you may append =<true|false> to this option.'
         })
         .demandCommand(0, 0);
     }
@@ -206,7 +219,15 @@ const argv1 = yargs
   .command(
     'monitor',
     'Show the output of the running program (process.stdout).',
-    yargs => yargs.demandCommand(0, 0)
+    yargs =>
+      yargs
+        .option('restart', {
+          type: 'boolean',
+          default: undefined,
+          describe:
+            'Enable/disable restarting the running program before monitor. Optionally you may append =<true|false> to this option.'
+        })
+        .demandCommand(0, 0)
   )
   .command(
     'flash <port> [params..]',
@@ -243,6 +264,36 @@ const argv1 = yargs
         .demandCommand(1, 1);
     }
   )
+  .command('install <packages..>', 'Install npm packages.', yargs => {
+    return yargs
+      .positional('packages', {
+        describe:
+          'The npm packages to install. See the npm documentation for more details.'
+      })
+      .check(argv => {
+        const { packages } = argv;
+        if (!packages.length) {
+          throw 'Must specify packages to install.';
+        }
+        return true;
+      })
+      .demandCommand(0, 0);
+  })
+  .command('uninstall <packages..>', 'Uninstall npm packages.', yargs => {
+    return yargs
+      .positional('packages', {
+        describe:
+          'The npm packages to uninstall. See the npm documentation for more details.'
+      })
+      .check(argv => {
+        const { packages } = argv;
+        if (!packages.length) {
+          throw 'Must specify packages to uninstall.';
+        }
+        return true;
+      })
+      .demandCommand(0, 0);
+  })
   .demandCommand(1, 1)
   .fail(((msg: string, err: Error, yargs: any) => {
     const help = yargs.help();
@@ -291,13 +342,22 @@ export function parseArguments(): Options {
     case 'sync':
       return parseSyncOptions(argv);
     case 'monitor':
-      return { type: 'monitor' };
+      const { restart } = argv;
+      return { type: 'monitor', restart };
     case 'flash':
-      const { port, params } = argv;
+      const { port } = argv;
       return { type: 'flash', port, params: other };
     case 'update':
       const action = argv._[1] as any;
       return { type: 'update', action };
+    case 'install': {
+      const { packages } = argv;
+      return { type: 'install', packages };
+    }
+    case 'uninstall': {
+      const { packages } = argv;
+      return { type: 'uninstall', packages };
+    }
     default:
       throw new Error(`Unknown command "${command}"`);
   }

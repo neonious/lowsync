@@ -7,7 +7,6 @@ import * as os from 'os';
 import * as path from 'path';
 import { FlashOptions } from '../../args';
 import { RunError } from '../../runError';
-const opn = require('opn');
 
 export default async function({ port, params }: FlashOptions) {
   let doneErasing = false;
@@ -224,6 +223,7 @@ export default async function({ port, params }: FlashOptions) {
   let mac = (await call('read_mac', false, true)) as string;
 
   // open browser window here, no not wait and ignore any unhandled promise catch handlers
+  const opn = require('opn');
   await opn('https://www.neonious.com/ThankYou', { wait: false }).catch(noop);
 
   // Get signed data based on MAC address and do flash erase in parallel, if requested

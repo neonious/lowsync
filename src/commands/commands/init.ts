@@ -1,14 +1,10 @@
-import * as inquirer from 'inquirer';
 import { extname } from 'path';
-import { configFile, createNewConfig } from '../../config/configFile';
-const replaceExt = require('replace-ext');
+import { configFile, createNewConfig } from '../../config/mainConfigFile';
+import { promptList } from '../../prompts';
 
 export default async function() {
   if (await configFile.exists()) {
-    const prompt = inquirer.createPromptModule();
-    const { action } = (await prompt({
-      name: 'action',
-      type: 'list',
+    const action = await promptList<'replace' | 'load'>({
       message: 'A config file already exists in the current directory.',
       choices: [
         {
@@ -21,9 +17,10 @@ export default async function() {
           value: 'load'
         }
       ]
-    })) as any;
+    });
 
     if (action === 'replace') {
+      const replaceExt = require('replace-ext');
       await configFile.moveTo(
         replaceExt(
           configFile.file,

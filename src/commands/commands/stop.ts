@@ -1,6 +1,5 @@
-import { httpApi } from '../../../common/src/http/httpApiService';
-import { httpApiNew } from '../../config/remoteAccessOpts';
+import { stopProgram } from '../../http';
 
-export default async function() {
-  await httpApiNew.Stop();
+export default function() {
+  return stopProgram();
 }

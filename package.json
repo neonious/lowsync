@@ -15,14 +15,17 @@
   "scripts": {
     "init": "npm i && cd common && npm i",
     "watch": "webpack --mode development --progress --watch",
+    "build-prod": "webpack --mode production --progress --bail",
     "publish-doc": "ts-node --project gulp.tsconfig.json node_modules/.bin/gulp publish-doc",
-    "prepare": "webpack --mode development --progress"
+    "prepare": "webpack --mode development --progress --bail"
   },
   "author": "neonious GmbH",
   "engines": {
     "node": ">=8 <12"
   },
   "dependencies": {
+    "@types/jszip": "^3.1.4",
+    "@types/proper-lockfile": "^3.0.0",
     "@types/yargs": "^12.0.2",
     "ansi-styles": "^3.2.1",
     "babel-cli": "^6.26.0",
@@ -37,10 +40,12 @@
     "inquirer": "^5.0.0",
     "inversify-binding-decorators": "^4.0.0",
     "is-node": "^1.0.2",
+    "jszip": "^3.1.5",
     "md5-file": "^4.0.0",
     "minimatch": "^3.0.4",
     "opn": "^5.4.0",
     "prettyjson": "^1.2.1",
+    "proper-lockfile": "^3.2.0",
     "react": "^16.2.0",
     "reflect-metadata": "^0.1.12",
     "replace-ext": "^1.0.0",
@@ -70,7 +75,9 @@
     "@types/replace-ext": "0.0.27",
     "@types/request-promise-native": "^1.0.15",
     "@types/rimraf": "^2.0.2",
+    "@types/typescript": "^2.0.0",
     "@types/underscore.string": "0.0.32",
+    "@types/uuid": "^3.4.4",
     "@types/webpack-bundle-analyzer": "^2.13.0",
     "@types/xml2js": "^0.4.3",
     "clean-webpack-plugin": "^0.1.19",
@@ -80,7 +87,7 @@
     "hard-source-webpack-plugin": "^0.12.0",
     "sudo-prompt": "^8.2.0",
     "ts-node": "^7.0.1",
-    "typescript": "^3.0.3",
+    "typescript": "3.1.6",
     "webpack": "^4.17.1",
     "webpack-bundle-analyzer": "^3.0.3",
     "webpack-cli": "^3.1.0"

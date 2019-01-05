@@ -13,7 +13,6 @@ import { pad } from 'underscore.string';
 import { httpApi } from '../../../common/src/http/httpApiService';
 import { jsonParse, SettingsOptions } from '../../args';
 import { RunError } from '../../runError';
-import { httpApiNew } from '../../config/remoteAccessOpts';
 
 function throwErrrorsIfExist(results: { setting: string; msg: string }[]) {
   if (results.length) {
@@ -43,7 +42,7 @@ async function setSettings(keyEquals: string[]) {
   }
   const newSettings = toSettingsStructure(flatSettings);
 
-  const validations = await httpApiNew.ValidateSettings({
+  const validations = await httpApi.ValidateSettings({
     settings: newSettings
   });
   const validationsFlat = toFlatStructure<ValidationKey>(validations);
@@ -62,7 +61,7 @@ async function setSettings(keyEquals: string[]) {
     }
     throw new RunError(`Cannot set settings\n${errors.join('\n')}`);
   } else {
-    await httpApiNew.SetSettings({ settings: newSettings });
+    await httpApi.SetSettings({ settings: newSettings });
   }
 }
 
@@ -83,7 +82,7 @@ async function showSettings(settingKeys: Set<string> | null) {
 }
 
 async function getValues(dotKeysToKey: Dict<string>) {
-  const settings = await httpApiNew.GetSettings();
+  const settings = await httpApi.GetSettings();
   const flatSettings = toFlatStructure<any>(settings);
   return chain(dotKeysToKey)
     .pickBy(key => key in flatSettings)
@@ -161,8 +160,8 @@ export default async function({
   setSettings: setSettings1,
   showSettings: showSettings1
 }: SettingsOptions) {
-  setSettings1 && await checkSet(setSettings1 || []);
-  showSettings1 && await checkShow(showSettings1 || []);
+  setSettings1 && (await checkSet(setSettings1 || []));
+  showSettings1 && (await checkShow(showSettings1 || []));
 
   if (setSettings1) {
     await setSettings(setSettings1);
