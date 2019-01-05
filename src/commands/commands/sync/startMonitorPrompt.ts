@@ -1,5 +1,4 @@
 import * as inquirer from 'inquirer';
-import MonitorCommand from '../monitor';
 
 interface StartMonitorPromptOptions {
   monitor?: boolean;
@@ -21,7 +20,7 @@ export async function startMonitorPrompt({
       : { doMonitor: monitor };
   if (doMonitor) {
     console.log('Starting monitor...');
-    const MonitorCommand = (await import('../monitor')).default;
-    await new MonitorCommand().run();
+    const run = (await import('../monitor')).default;
+    await run();
   }
 }

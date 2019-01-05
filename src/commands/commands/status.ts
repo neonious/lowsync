@@ -1,33 +1,23 @@
-import { Command } from '../command';
 import { httpApi } from '../../../common/src/http/httpApiService';
+import { httpApiNew } from '../../config/remoteAccessOpts';
 
-export default class StatusCommand extends Command {
-  readonly requestConfig = {};
-  readonly usingNoRemoteApis = false;
+export default async function() {
+  const {
+    code: { status }
+  } = await httpApiNew.Status({ code: true });
 
-  constructor(
-  ) {
-    super('status');
+  let statusStr: string;
+
+  switch (status) {
+    case 'paused':
+      statusStr = 'paused / crashed';
+      break;
+    case 'updating_sys':
+      statusStr = 'performing system update';
+      break;
+    default:
+      statusStr = status;
+      break;
   }
-
-  async run() {
-    const {
-      code: { status }
-    } = await httpApi.Status({ code: true });
-
-    let statusStr: string;
-
-    switch (status) {
-      case 'paused':
-        statusStr = 'paused / crashed';
-        break;
-      case 'updating_sys':
-        statusStr = 'performing system update';
-        break;
-      default:
-        statusStr = status;
-        break;
-    }
-    console.log(`Current status: ${statusStr}`);
-  }
+  console.log(`Current status: ${statusStr}`);
 }
