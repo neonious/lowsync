@@ -176,17 +176,17 @@ export function getFileSynchronizer(
   return async function(files: SyncFile[]) {
     const bar = new cliProgress.Bar(
       {
-        format: '{file} |{bar}| {percentage}%',
+        format: '{pre} |{bar}| {percentage}%{file}',
         stream: process.stdout,
         barsize: 30
       },
       cliProgress.Presets.shades_classic
     );
-    bar.start(files.length, 0, { file: 'Preparing synchronization...' });
+    bar.start(files.length, 0, { pre: 'Preparing synchronization...' });
 
     let val = 0;
     for (const file of files) {
-      bar.update(val, { file: `Synchronizing: ${file.relPath}` });
+      bar.update(val, { pre: `Synchronizing...`, file: ` | ${file.relPath}` });
       const { posixPath, fullPath } = getPaths(file.relPath);
       switch (file.destside) {
         case 'pc': {
@@ -298,7 +298,7 @@ export function getFileSynchronizer(
       }
       val++;
     }
-    bar.update(val, { file: `Synchronization complete` });
+    bar.update(val, { pre: `Synchronization complete`, file: '' });
     bar.stop();
   };
 }
