@@ -25,8 +25,11 @@ import {
 } from './sync/synchronize/syncFile';
 import * as fs from 'fs-extra';
 import * as inquirer from 'inquirer';
+import { checkAndAskToRestart } from './sync/askToRestart';
 
-export default class SyncCommand extends Command<'syncDir' | 'transpile' | 'exclude'> {
+export default class SyncCommand extends Command<
+  'syncDir' | 'transpile' | 'exclude'
+> {
   readonly requestConfig = { syncDir: true, transpile: true, exclude: true };
   readonly usingNoRemoteApis = false;
 
@@ -92,28 +95,6 @@ export default class SyncCommand extends Command<'syncDir' | 'transpile' | 'excl
   }
 
   async run() {
-    const prompt = inquirer.createPromptModule();
-    const {
-      code: { status }
-    } = await httpApi.Status({ code: true });
-
-    let startAfterSync = false;
-    if (status !== 'stopped') {
-      const { restart } = await prompt<{ restart: boolean }>({
-        name: 'restart',
-        type: 'confirm',
-        message:
-          'The user application is currently running (or paused). Stop before and restart after sync?',
-        default: true
-      });
-      if (restart) {
-        startAfterSync = true;
-        console.log('Stopping program...');
-        await httpApi.Stop();
-        console.log('Syncing...');
-      }
-    }
-
     await this.prepareSyncFolder();
 
     console.log('Fetching file system listings...');
@@ -130,6 +111,7 @@ export default class SyncCommand extends Command<'syncDir' | 'transpile' | 'excl
     if (!hadPut) {
       const syncFileExists = await fs.pathExists(this.syncFilePath);
       if (localFiles.length && syncFileExists) {
+        const prompt = inquirer.createPromptModule();
         const { action } = await prompt<{ action: 'abort' | 'initial_sync' }>({
           name: 'action',
           type: 'list',
@@ -208,26 +190,24 @@ export default class SyncCommand extends Command<'syncDir' | 'transpile' | 'excl
       await synchronizer(syncLog);
     }
 
+    let mcChanged = false;
     for (const { destside, relPath, statType } of syncLog.filter(
       s => s.type === 'add'
     ) as SyncFileAdd[]) {
       const direction = destside === 'pc' ? 'MC => PC' : 'PC => MC';
       const fd = statType === 'dir' ? 'Folder' : 'File';
       console.log(`${direction}: +${fd} ${relPath}`);
+      if (destside === 'mc') mcChanged = true;
     }
     for (const { destside, relPath } of fakeSyncLog) {
       const direction = destside === 'pc' ? 'MC => PC' : 'PC => MC';
       console.log(`${direction}: -File/Folder ${relPath}`);
+      if (destside === 'mc') mcChanged = true;
     }
 
-    if (startAfterSync) {
-      console.log('Restarting program...');
-      let result = await httpApi.Start({ action: 'start' });
-      if (result === 'FILE_NOT_FOUND') {
-        throw new RunError(`The file to start does not exist.`);
-      } else if (result) {
-        throw new RunError('Could not start program: ' + result);
-      }
-    }
+    await checkAndAskToRestart({
+      mcChanged,
+      autoRestart: this.options.restart
+    });
   }
 }
