@@ -51,7 +51,7 @@ export default async function getRemoteFiles({
       "Content-Type": "application/xml;charset=UTF-8",
       "lowrmt-md5": "1",
     }
-  }); // todo error handling here too
+  });
  
   const hadPut = (headers as any)['lowrmt-had-put']==='1';
   const result = await new Promise<PropfindData>((resolve, reject) => {

@@ -64,6 +64,7 @@ export interface SyncOptions {
 
 export interface MonitorOptions {
   type: 'monitor';
+  restart?: boolean;
 }
 
 export interface FlashOptions {
@@ -206,7 +207,15 @@ const argv1 = yargs
   .command(
     'monitor',
     'Show the output of the running program (process.stdout).',
-    yargs => yargs.demandCommand(0, 0)
+    yargs =>
+      yargs
+        .option('restart', {
+          type: 'boolean',
+          default: undefined,
+          describe:
+            'Enable or disable restarting the program on the microcontroller before starting monitor. If this option is not specified, the user will be asked.'
+        })
+        .demandCommand(0, 0)
   )
   .command(
     'flash <port> [params..]',
@@ -291,9 +300,10 @@ export function parseArguments(): Options {
     case 'sync':
       return parseSyncOptions(argv);
     case 'monitor':
-      return { type: 'monitor' };
+      const { restart } = argv;
+      return { type: 'monitor', restart };
     case 'flash':
-      const { port, params } = argv;
+      const { port } = argv;
       return { type: 'flash', port, params: other };
     case 'update':
       const action = argv._[1] as any;

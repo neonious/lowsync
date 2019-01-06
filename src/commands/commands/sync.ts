@@ -1,32 +1,21 @@
+import * as fs from 'fs-extra';
 import { httpApi } from '../../../common/src/http/httpApiService';
 import { SyncOptions } from '../../args';
+import { configFile } from '../../config/mainConfigFile';
+import { getProgramStatus, restartProgram } from '../../http';
+import { confirmOrDefault, promptList } from '../../prompts';
 import { RunError } from '../../runError';
 import { getExistingOrNewConfigPath } from '../../util';
 import askUser from './sync/askUser';
 import getLocalFiles from './sync/fsStat/files/local';
 import getRemoteFiles from './sync/fsStat/files/remote';
-import FsStructure, {
-  FsStatStructure,
-  getSubStructure,
-  setInStructure,
-  toStructure
-} from './sync/fsStructure';
+import FsStructure, { FsStatStructure, getSubStructure, setInStructure, toStructure } from './sync/fsStructure';
 import getInitialActions from './sync/getInitialActions';
 import { isAskUserAction, isFinalAction } from './sync/initialAction';
 import { loadSyncDataFile, saveSyncDataFile } from './sync/syncDataFile';
 import FinalAction from './sync/synchronize/finalAction';
 import { getFilesToSynchronize } from './sync/synchronize/getFilesToSynchronize';
-import {
-  getFileSynchronizer,
-  SyncFile,
-  SyncFileAdd,
-  SyncFileFakeRemove
-} from './sync/synchronize/syncFile';
-import * as fs from 'fs-extra';
-import * as inquirer from 'inquirer';
-import { checkAndAskToRestart } from './sync/askToRestart';
-import { startMonitorPrompt } from './sync/startMonitorPrompt';
-import { configFile } from '../../config/configFile';
+import { getFileSynchronizer, SyncFile, SyncFileAdd, SyncFileFakeRemove } from './sync/synchronize/syncFile';
 
 export default async function(options: SyncOptions) {
   const config = {
@@ -104,12 +93,10 @@ export default async function(options: SyncOptions) {
     excludeGlobs: exclude()
   });
   if (!hadPut) {
+    type T = 'abort' | 'initial_sync';
     const syncFileExists = await fs.pathExists(syncFilePath());
     if (localFiles.length && syncFileExists) {
-      const prompt = inquirer.createPromptModule();
-      const { action } = await prompt<{ action: 'abort' | 'initial_sync' }>({
-        name: 'action',
-        type: 'list',
+      const action = await promptList<T>({
         message:
           'The filesystem of the microcontroller has not been synced before. What would you like to do?',
         default: 'abort',
@@ -200,12 +187,33 @@ export default async function(options: SyncOptions) {
     if (destside === 'mc') mcChanged = true;
   }
 
-  await checkAndAskToRestart({
-    mcChanged,
-    autoRestart: options.restart
+  if (mcChanged) {
+    const status = await getProgramStatus();
+
+    if (status !== 'stopped') {
+      const restart = await confirmOrDefault({
+        answer: options.restart,
+        message:
+          'The filesystem of the microcontroller has changed. Restart the currently running program for any changes to take effect? (Use the --restart command line option to enable or disable automatic restart after sync.)',
+        defaultAnswer: true
+      });
+      if (restart) {
+        console.log('Restarting program...');
+        await restartProgram();
+      }
+    }
+  }
+
+  const monitor = await confirmOrDefault({
+    answer: options.monitor,
+    message:
+      'Would you like to show the output of the microcontroller? (Use the --monitor command line option to enable or disable automatic showing of the output after sync.)',
+    defaultAnswer: true
   });
 
-  await startMonitorPrompt({
-    monitor: options.monitor
-  });
+  if (monitor) {
+    console.log('Starting monitor...');
+    const websocket = await import('../../websocket');
+    await websocket.monitor();
+  }
 }

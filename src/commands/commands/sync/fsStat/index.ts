@@ -1,4 +1,3 @@
-import FsStructure, { setInStructure } from '../fsStructure';
 
 export interface FsFileStat {
   type: 'file';

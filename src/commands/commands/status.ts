@@ -1,10 +1,7 @@
-import { httpApi } from '../../../common/src/http/httpApiService';
+import { getProgramStatus } from '../../http';
 
 export default async function() {
-  const {
-    code: { status }
-  } = await httpApi.Status({ code: true });
-
+  const status = await getProgramStatus();
   let statusStr: string;
 
   switch (status) {

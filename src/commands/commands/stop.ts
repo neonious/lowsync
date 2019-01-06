@@ -1,5 +1,5 @@
-import { httpApi } from '../../../common/src/http/httpApiService';
+import { stopProgram } from '../../http';
 
-export default async function() {
-  await httpApi.Stop();
+export default function() {
+  return stopProgram();
 }

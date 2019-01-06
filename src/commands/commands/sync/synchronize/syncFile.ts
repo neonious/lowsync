@@ -155,7 +155,7 @@ export function getFileSynchronizer(
       await putFile(posixPath, buffer, { headers });
     } else {
       if (data.byteLength === 0) {
-        await putFile(posixPath, null as any); // todo
+        await putFile(posixPath, null as any); 
       } else {
         await putFile(posixPath, data);
       }

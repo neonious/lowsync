@@ -15,8 +15,9 @@
   "scripts": {
     "init": "npm i && cd common && npm i",
     "watch": "webpack --mode development --progress --watch",
+    "build-prod":"webpack --mode production --progress --bail",
     "publish-doc": "ts-node --project gulp.tsconfig.json node_modules/.bin/gulp publish-doc",
-    "prepare": "webpack --mode development --progress"
+    "prepare": "webpack --mode development --progress --bail"
   },
   "author": "neonious GmbH",
   "engines": {

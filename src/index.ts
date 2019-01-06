@@ -1,9 +1,9 @@
 import chalk from 'chalk';
 import { parseArguments } from './args';
 import { authConfigFile } from './config/authConfigFile';
-import { configFile } from './config/configFile';
+import { configFile } from './config/mainConfigFile';
 import { RunError } from './runError';
-import './config/remoteAccessOpts';
+import './httpHooks';
 
 process.on('unhandledRejection', (reason, p) => {
   console.error(
@@ -25,7 +25,6 @@ async function main() {
     }
 
     await run(args);
-
   } catch (ex) {
     if (ex instanceof RunError) {
       console.error(chalk.white.bgRed('An error has occured: ' + ex.message));

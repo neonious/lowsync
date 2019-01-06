@@ -1,9 +1,9 @@
-import * as inquirer from 'inquirer';
 import * as prettyjson from 'prettyjson';
 import { httpApi } from '../../../common/src/http/httpApiService';
 import { Status } from '../../../common/src/webSocket/types/status';
 import { RunError } from '../../runError';
 import { UpdateOptions } from '../../args';
+import { promptBool } from '../../prompts';
 
 async function showUpdate(info?: Status.Update.Update) {
   if (info) {
@@ -15,13 +15,10 @@ async function showUpdate(info?: Status.Update.Update) {
 }
 
 async function confirmUpdate() {
-  const prompt = inquirer.createPromptModule();
-  const { doUpdate } = (await prompt({
-    name: 'doUpdate',
-    type: 'confirm',
+  const doUpdate = await promptBool({
     message: 'Do you want to install this update?',
     default: true
-  })) as any;
+  });
   return doUpdate;
 }
 
