@@ -8,7 +8,7 @@ import {
   createDirectory,
   deleteFile,
   getFile,
-  putFile,
+  putFile
 } from '../../../../../common/src/http/webdav';
 import { RunError } from '../../../../runError';
 import { FsFileStat } from '../fsStat';
@@ -22,8 +22,6 @@ import { saveSyncDataFile } from '../syncDataFile';
 import { osRelPathToRootedPosix } from '../util';
 import { SyncFile } from './syncFile';
 import { McHttpError } from '../../../../../common/src/http/mcHttpError';
-const babel = require('babel-core');
-const rimraf = require('rimraf');
 
 export class SyncToLocalError extends Error {
   constructor(
@@ -69,6 +67,7 @@ export type SyncFile = SyncFileAdd | SyncFileRemove;
 function transpileJavaScript(
   source: string
 ): { compiled: string; map: string } {
+  const babel = require('babel-core');
   const result = babel.transform(source, {
     presets: [require('babel-preset-es2015'), require('babel-preset-stage-2')],
     sourceMaps: 'both'
@@ -155,7 +154,7 @@ export function getFileSynchronizer(
       await putFile(posixPath, buffer, { headers });
     } else {
       if (data.byteLength === 0) {
-        await putFile(posixPath, null as any); 
+        await putFile(posixPath, null as any);
       } else {
         await putFile(posixPath, data);
       }
@@ -208,8 +207,11 @@ export function getFileSynchronizer(
               case 'remove': {
                 if (await fs.pathExists(fullPath)) {
                   try {
+                    const rimraf = require('rimraf');
                     await new Promise((resolve, reject) =>
-                      rimraf(fullPath, (err:any) => (err ? reject(err) : resolve()))
+                      rimraf(fullPath, (err: any) =>
+                        err ? reject(err) : resolve()
+                      )
                     );
                     await setInStructureFromRelPath(file.relPath, {
                       type: 'non-existing'

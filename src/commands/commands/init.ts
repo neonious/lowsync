@@ -1,7 +1,6 @@
 import { extname } from 'path';
 import { configFile, createNewConfig } from '../../config/mainConfigFile';
 import { promptList } from '../../prompts';
-const replaceExt = require('replace-ext');
 
 export default async function() {
   if (await configFile.exists()) {
@@ -21,6 +20,7 @@ export default async function() {
     });
 
     if (action === 'replace') {
+      const replaceExt = require('replace-ext');
       await configFile.moveTo(
         replaceExt(
           configFile.file,

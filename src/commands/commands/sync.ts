@@ -3,19 +3,29 @@ import { httpApi } from '../../../common/src/http/httpApiService';
 import { SyncOptions } from '../../args';
 import { configFile } from '../../config/mainConfigFile';
 import { getProgramStatus, restartProgram } from '../../http';
-import { confirmOrDefault, promptList } from '../../prompts';
+import { confirmOrDefault, promptList, promptBool } from '../../prompts';
 import { RunError } from '../../runError';
 import { getExistingOrNewConfigPath } from '../../util';
 import askUser from './sync/askUser';
 import getLocalFiles from './sync/fsStat/files/local';
 import getRemoteFiles from './sync/fsStat/files/remote';
-import FsStructure, { FsStatStructure, getSubStructure, setInStructure, toStructure } from './sync/fsStructure';
+import FsStructure, {
+  FsStatStructure,
+  getSubStructure,
+  setInStructure,
+  toStructure
+} from './sync/fsStructure';
 import getInitialActions from './sync/getInitialActions';
 import { isAskUserAction, isFinalAction } from './sync/initialAction';
 import { loadSyncDataFile, saveSyncDataFile } from './sync/syncDataFile';
 import FinalAction from './sync/synchronize/finalAction';
 import { getFilesToSynchronize } from './sync/synchronize/getFilesToSynchronize';
-import { getFileSynchronizer, SyncFile, SyncFileAdd, SyncFileFakeRemove } from './sync/synchronize/syncFile';
+import {
+  getFileSynchronizer,
+  SyncFile,
+  SyncFileAdd,
+  SyncFileFakeRemove
+} from './sync/synchronize/syncFile';
 
 export default async function(options: SyncOptions) {
   const config = {
@@ -187,29 +197,45 @@ export default async function(options: SyncOptions) {
     if (destside === 'mc') mcChanged = true;
   }
 
-  if (mcChanged) {
-    const status = await getProgramStatus();
+  const { restartOnChange: _rs, monitor: _mon } = options;
 
-    if (status !== 'stopped') {
-      const restart = await confirmOrDefault({
-        answer: options.restart,
-        message:
-          'The filesystem of the microcontroller has changed. Restart the currently running program for any changes to take effect? (Use the --restart command line option to enable or disable automatic restart after sync.)',
-        defaultAnswer: true
-      });
-      if (restart) {
-        console.log('Restarting program...');
-        await restartProgram();
+  if (!mcChanged && !_mon) return;
+
+  const monitor = await confirmOrDefault({
+    answer: _mon,
+    message:
+      'Would you like to show the output of the microcontroller? (Use the --monitor command line option to remove this prompt and enable/disable showing of the output after sync.)',
+    defaultAnswer: true
+  });
+
+  let restartOnChange = false;
+  if (_rs !== false) {
+    if (_rs === true || monitor) {
+      restartOnChange = true;
+    } else {
+      if (mcChanged) {
+        const status = await getProgramStatus();
+        if (status !== 'updating_sys') {
+          const msg =
+            status === 'stopped'
+              ? 'Start the program now?'
+              : 'Restart the currently running program for any changes to take effect?';
+          restartOnChange = await promptBool({
+            message:
+              'The filesystem of the microcontroller has changed. ' +
+              msg +
+              ' (Use the --restartOnChange command line option to remove this prompt and enable/disable restart after sync.)',
+            default: true
+          });
+        }
       }
     }
   }
 
-  const monitor = await confirmOrDefault({
-    answer: options.monitor,
-    message:
-      'Would you like to show the output of the microcontroller? (Use the --monitor command line option to enable or disable automatic showing of the output after sync.)',
-    defaultAnswer: true
-  });
+  if (restartOnChange && mcChanged) {
+    console.log('Restarting program...');
+    await restartProgram();
+  }
 
   if (monitor) {
     console.log('Starting monitor...');
