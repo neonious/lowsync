@@ -65,6 +65,7 @@ export interface SyncOptions {
 export interface MonitorOptions {
   type: 'monitor';
   restart?: boolean;
+  global: boolean;
 }
 
 export interface FlashOptions {
@@ -227,6 +228,12 @@ const argv1 = yargs
           describe:
             'Enable/disable restarting the running program before monitor. Optionally you may append =<true|false> to this option.'
         })
+        .option('global', {
+          type: 'boolean',
+          default: false,
+          describe:
+            'Show all output, not just from the currently running program.'
+        })
         .demandCommand(0, 0)
   )
   .command(
@@ -342,8 +349,8 @@ export function parseArguments(): Options {
     case 'sync':
       return parseSyncOptions(argv);
     case 'monitor':
-      const { restart } = argv;
-      return { type: 'monitor', restart };
+      const { restart, global } = argv;
+      return { type: 'monitor', restart, global };
     case 'flash':
       const { port } = argv;
       return { type: 'flash', port, params: other };

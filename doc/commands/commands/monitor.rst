@@ -12,7 +12,7 @@ Synopsis
 
 .. code-block:: bash
 
-    lowsync monitor [--restart[=<true | false>]]
+    lowsync monitor [--restart[=<true | false>]] [--global]
 
 Description
 ==================
@@ -29,6 +29,12 @@ Options
     --restart=false
 
 Enable/disable restarting the running program before monitor.
+
+.. code-block:: bash
+
+    --global
+
+Show all output, not just from the currently running program.
 
 Output
 ==================
