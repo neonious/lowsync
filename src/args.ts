@@ -88,16 +88,6 @@ export type Options =
   | FlashOptions
   | UpdateOptions;
 
-export function jsonParse(str: string) {
-  try {
-    return JSON.parse(str);
-  } catch (e) {
-    if (e instanceof SyntaxError) {
-      return JSON.parse(`"${str}"`); // todo escape string (for quotes)
-    } else throw e;
-  }
-}
-
 const argv1 = yargs
   .strict()
   .scriptName('lowsync')

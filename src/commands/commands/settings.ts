@@ -1,20 +1,37 @@
-import { SettingsKey } from '@common/settings/definitions';
+import { SettingsKey, SettingDef } from '@common/settings/definitions';
 import {
   getDotKeyFromKey,
   getDotKeyMapping,
   toFlatStructure,
   toSettingsStructure,
-  validateAll
+  validateAll,
+  getDef
 } from '@common/settings/util';
 import { getTranslation, ValidationKey } from '@common/settings/validations';
 import { EnglishTranslations } from '@common/translations/en';
 import { chain, mapKeys, maxBy, pickBy } from 'lodash';
 import { pad } from 'underscore.string';
 import { httpApi } from '../../../common/src/http/httpApiService';
-import { jsonParse, SettingsOptions } from '../../args';
+import { SettingsOptions } from '../../args';
 import { RunError } from '../../runError';
 import { httpApiNew } from '../../config/remoteAccessOpts';
 
+function jsonParse(str: string, type: SettingDef['$type']) {
+  switch (type) {
+    case 'boolean':
+      if (str === '') return null;
+      return JSON.parse(str);
+    case 'string':
+    case 'ip':
+    case 'password':
+    case 'fileinput':
+      return str;
+    case 'number':
+      if (str === '') return null;
+      return JSON.parse(str);
+  }
+}
+ 
 function throwErrrorsIfExist(results: { setting: string; msg: string }[]) {
   if (results.length) {
     const padBy = maxBy(results, e => e.setting.length)!.setting.length;
@@ -32,7 +49,7 @@ async function setSettings(keyEquals: string[]) {
     const eqIndex = keyEqual.indexOf('=');
     const dotKey = keyEqual.substr(0, eqIndex);
     const valueStr = keyEqual.substr(eqIndex + 1);
-    const value = jsonParse(valueStr);
+    const value = jsonParse(valueStr,getDef(dotKeysToKey[dotKey] as SettingsKey).$type);
     parsed.push({ dotKey, value });
   }
 
@@ -131,7 +148,7 @@ async function checkSet(settings: string[]) {
     }
     const valueStr = setting.substr(eqIndex + 1);
     try {
-      const value = jsonParse(valueStr);
+      const value = jsonParse(valueStr,getDef(dotKeysToKey[dotKey] as SettingsKey).$type);
       const msg = validateAll(
         dotKeysToKey[dotKey] as SettingsKey,
         value,
