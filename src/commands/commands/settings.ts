@@ -165,7 +165,7 @@ async function checkSet(settings: string[]) {
       if (e instanceof SyntaxError) {
         results.push({
           setting,
-          msg: `Could not parse value (${valueStr}).`
+          msg: `Could not parse value (${valueStr}). Please make sure you are passing a valid value (e.g. correct datatype)?`
         });
         continue;
       } else throw e;
