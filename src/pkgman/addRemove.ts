@@ -5,6 +5,7 @@ import { websocketApi } from '../../common/src/webSocket/socketPool';
 import { InstallOptions, UninstallOptions } from '../args';
 import { RunError } from '../runError';
 import { prepareWebsocket } from '../websocket';
+import { McHttpError } from '../../common/src/http/mcHttpError';
 
 export async function addRemove({
   type,
@@ -97,6 +98,13 @@ export async function addRemove({
     });
   } catch (e) {
     subscription.unsubscribe();
+    if (e instanceof McHttpError) {
+      if (e.response && e.response.status === 503) {
+        throw new RunError(
+          'The microcontroller is currently performing another package update. Please try again later.'
+        );
+      }
+    }
     throw e;
   }
 }
