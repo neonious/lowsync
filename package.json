@@ -87,7 +87,7 @@
     "hard-source-webpack-plugin": "^0.12.0",
     "sudo-prompt": "^8.2.0",
     "ts-node": "^7.0.1",
-    "typescript": "^3.4.0-dev.20190202",
+    "typescript": "^3.3.1",
     "webpack": "^4.17.1",
     "webpack-bundle-analyzer": "^3.0.3",
     "webpack-cli": "^3.1.0"
