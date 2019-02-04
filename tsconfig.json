@@ -18,6 +18,8 @@
         },
         "jsx": "react",
         "mapRoot": "build",
+        // "noUnusedLocals": true,
+        // "noUnusedParameters": true,
         "strictFunctionTypes": false // commented out cuz rxjs typings give compile error in virtualtimescheduler.d.ts. until they update their lib, no strictFunctionTypes for us
     },
     "include": [

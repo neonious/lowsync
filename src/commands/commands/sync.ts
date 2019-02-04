@@ -1,5 +1,9 @@
+import * as fs from 'fs-extra';
 import { httpApi } from '../../../common/src/http/httpApiService';
 import { SyncOptions } from '../../args';
+import { configFile } from '../../config/mainConfigFile';
+import { getProgramStatus, restartProgram } from '../../http';
+import { confirmOrDefault, promptList, promptBool } from '../../prompts';
 import { RunError } from '../../runError';
 import { getExistingOrNewConfigPath } from '../../util';
 import askUser from './sync/askUser';
@@ -22,12 +26,6 @@ import {
   SyncFileAdd,
   SyncFileFakeRemove
 } from './sync/synchronize/syncFile';
-import * as fs from 'fs-extra';
-import * as inquirer from 'inquirer';
-import { checkAndAskToRestart } from './sync/askToRestart';
-import { startMonitorPrompt } from './sync/startMonitorPrompt';
-import { configFile } from '../../config/configFile';
-import { httpApiNew } from '../../config/remoteAccessOpts';
 
 export default async function(options: SyncOptions) {
   const config = {
@@ -105,12 +103,10 @@ export default async function(options: SyncOptions) {
     excludeGlobs: exclude()
   });
   if (!hadPut) {
+    type T = 'abort' | 'initial_sync';
     const syncFileExists = await fs.pathExists(syncFilePath());
     if (localFiles.length && syncFileExists) {
-      const prompt = inquirer.createPromptModule();
-      const { action } = await prompt<{ action: 'abort' | 'initial_sync' }>({
-        name: 'action',
-        type: 'list',
+      const action = await promptList<T>({
         message:
           'The filesystem of the microcontroller has not been synced before. What would you like to do?',
         default: 'abort',
@@ -136,7 +132,7 @@ export default async function(options: SyncOptions) {
       await fs.unlink(syncFilePath());
     }
 
-    await httpApiNew.SetLowSyncHadPut();
+    await httpApi.SetLowSyncHadPut();
   }
   const remoteFilesStruct = toStructure(remoteFiles);
 
@@ -201,12 +197,49 @@ export default async function(options: SyncOptions) {
     if (destside === 'mc') mcChanged = true;
   }
 
-  await checkAndAskToRestart({
-    mcChanged,
-    autoRestart: options.restart
+  const { restart: _rs, monitor: _mon } = options;
+
+  if (!mcChanged && !_mon) return;
+
+  const monitor = await confirmOrDefault({
+    answer: _mon,
+    message:
+      'Would you like to show the output of the microcontroller? (Use the --monitor command line option to remove this prompt and enable/disable showing of the output after sync.)',
+    defaultAnswer: true
   });
 
-  await startMonitorPrompt({
-    monitor: options.monitor
-  });
+  let restart = false;
+  if (_rs !== false) {
+    if (_rs === true || monitor) {
+      restart = true;
+    } else {
+      if (mcChanged) {
+        const status = await getProgramStatus();
+        if (status !== 'updating_sys') {
+          const msg =
+            status === 'stopped'
+              ? 'Start the program now?'
+              : 'Restart the currently running program for any changes to take effect?';
+          restart = await promptBool({
+            message:
+              'The filesystem of the microcontroller has changed. ' +
+              msg +
+              ' (Use the --restart command line option to remove this prompt and enable/disable restart after sync.)',
+            default: true
+          });
+        }
+      }
+    }
+  }
+
+  if (restart && mcChanged) {
+    console.log('Restarting program...');
+    await restartProgram();
+  }
+
+  if (monitor) {
+    console.log('Starting monitor...');
+    const websocket = await import('../../websocket');
+    await websocket.monitor();
+  }
 }

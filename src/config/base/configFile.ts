@@ -4,7 +4,7 @@ import { isPlainObject } from 'lodash';
 import { RunError } from '../../runError';
 import { SettingDef } from '../settingDef';
 import chalk from 'chalk';
-import * as inquirer from 'inquirer';
+import { promptString, promptBool } from '../../prompts';
 
 export class ConfigFile<TConfig> {
   private _config: any;
@@ -96,17 +96,12 @@ export class ConfigFile<TConfig> {
         prompt: { message, defaultValue: promptDefaultValue },
         validate
       } = def;
-      const prompt = inquirer.createPromptModule();
       err && console.error(chalk.red(this.errMsg(key, err)));
       switch (type) {
         case 'string':
         case 'integer': {
-          const { value } = await prompt<{ value: string }>({
-            name: 'value',
-            type:
-              def.type === 'string' && def.prompt.isPassword
-                ? 'password'
-                : 'input',
+          const value = await promptString({
+            isPassword: def.type === 'string' && def.prompt.isPassword,
             message,
             default: defaultValue
               ? defaultValue.toString()
@@ -129,16 +124,18 @@ export class ConfigFile<TConfig> {
             }
           });
           result = type === 'integer' ? parseInt(value) : value;
-          
+
           break;
         }
         case 'boolean': {
-          const { value } = await prompt<{ value: boolean }>({
-            name: 'value',
-            type: 'confirm',
+          const value = await promptBool({
             message,
             default:
-              defaultValue !== undefined ? defaultValue : promptDefaultValue,
+              defaultValue !== undefined
+                ? defaultValue
+                : promptDefaultValue !== undefined
+                ? (promptDefaultValue as any)
+                : false,
             validate: (value: string) => {
               return true; // todo
             }
@@ -173,7 +170,7 @@ export class ConfigFile<TConfig> {
   }
 
   async getKey<K extends keyof TConfig>(key: K): Promise<TConfig[K]> {
-    if (this.emptyFileErr && !await this.exists()) {
+    if (this.emptyFileErr && !(await this.exists())) {
       throw new RunError(this.emptyFileErr);
     }
     const config = await this.getConfig();

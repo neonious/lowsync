@@ -3,9 +3,6 @@ const CleanWebpackPlugin = require('clean-webpack-plugin');
 const fs = require('fs');
 const keysTransformer = require('ts-transformer-keys/transformer').default;
 const webpack = require('webpack');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
-const BundleAnalyzerPlugin = require('webpack-bundle-analyzer')
-  .BundleAnalyzerPlugin;
 
 const nodeModules = {};
 fs.readdirSync(path.resolve(__dirname, 'node_modules'))
@@ -25,8 +22,7 @@ fs.readdirSync(path.resolve(__dirname, 'common/node_modules'))
 
 module.exports = (env, options) => {
   const mode = options.mode;
-  const isProduction = mode === 'production';
-  const outDir = 'build';
+  const outDir = 'buildtest';
 
   return {
     stats: 'minimal',
@@ -34,7 +30,7 @@ module.exports = (env, options) => {
       hints: false
     },
     entry: {
-      app: path.resolve(__dirname, 'src/index.ts')
+      app: path.resolve(__dirname, 'test.ts')
     },
     target: 'node',
     node: {
@@ -42,7 +38,7 @@ module.exports = (env, options) => {
     },
     externals: nodeModules,
     output: {
-      filename: 'index.js',
+      filename: 'test.js',
       path: `${__dirname}/${outDir}`
     },
     devtool: 'source-map',
@@ -69,31 +65,9 @@ module.exports = (env, options) => {
       ]
     },
     plugins: [
-      // new BundleAnalyzerPlugin(),
       new CleanWebpackPlugin(outDir),
       new webpack.BannerPlugin({
         banner: "require('source-map-support').install();",
-        raw: true
-      }),
-      new CopyWebpackPlugin([
-        {
-          context: path.join(__dirname, 'esptool'),
-          from: '*.py',
-          to: path.join(__dirname, outDir, 'esptool')
-        },
-        {
-          context: path.join(__dirname, 'esptool'),
-          from: 'ecdsa',
-          to: path.join(__dirname, outDir, 'esptool', 'ecdsa')
-        },
-        {
-          context: './esptool',
-          from: 'pyaes',
-          to: path.join(__dirname, outDir, 'esptool', 'pyaes')
-        }
-      ]),
-      new webpack.BannerPlugin({
-        banner: '#!/usr/bin/env node',
         raw: true
       }),
       new webpack.EnvironmentPlugin({

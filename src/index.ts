@@ -1,9 +1,9 @@
 import chalk from 'chalk';
 import { parseArguments } from './args';
-import { logout, tryLogin, isLoggedIn } from './config/auth';
 import { authConfigFile } from './config/authConfigFile';
-import { configFile } from './config/configFile';
+import { configFile } from './config/mainConfigFile';
 import { RunError } from './runError';
+import './httpHooks';
 
 process.on('unhandledRejection', (reason, p) => {
   console.error(
@@ -25,12 +25,6 @@ async function main() {
     }
 
     await run(args);
-
-    if (isLoggedIn()) {
-      if (type !== 'update' && type !== 'monitor')
-        // todo because update also logs out (UpdateAndLogout api method)
-        await logout();
-    }
   } catch (ex) {
     if (ex instanceof RunError) {
       console.error(chalk.white.bgRed('An error has occured: ' + ex.message));

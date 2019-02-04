@@ -14,6 +14,8 @@ lowsync supports several commands. Please select a command from the navigation o
    commands/monitor
    commands/flash
    commands/update/index
+   commands/install
+   commands/uninstall
    :hidden:
    :maxdepth: 1
    :caption: Available commands:
