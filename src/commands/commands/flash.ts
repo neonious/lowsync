@@ -7,6 +7,48 @@ import * as os from 'os';
 import * as path from 'path';
 import { FlashOptions } from '../../args';
 import { RunError } from '../../runError';
+import { resolveCname } from 'dns';
+
+const SerialPort = require('serialport');
+const Readline = require('@serialport/parser-readline');
+
+function check_wrover(path: string) {
+    return new Promise((resolve, reject) => {
+        const port = new SerialPort(path, { baudRate: 921600 });
+        const parser = new Readline();
+
+        port.on('error', reject);
+        parser.on('error', reject);
+        port.pipe(parser);
+
+        let failTimer = setTimeout(() => {
+            port.close(() => {});
+            reject(new Error('ESP32 not responding, timeout'));
+        }, 10000);
+
+        parser.on('data', (line: string) => {
+            line = line.trim();
+            if(line == "IS_WROVER") {
+                clearTimeout(failTimer);
+                port.close(() => {
+                    resolve(true);
+                });
+            } else if(line == "NOT_WROVER") {
+                clearTimeout(failTimer);
+                port.close(() => {
+                    resolve(false);
+                });
+            }
+        });
+
+        // Trigger reset
+        port.on('open', () => {
+            port.set({'rts': true, 'dtr': false}, () => {
+                port.set({'rts': false, 'dtr': false});
+            });
+        });
+    });
+}
 
 export default async function({ port, params }: FlashOptions) {
   let doneErasing = false;
@@ -135,7 +177,8 @@ export default async function({ port, params }: FlashOptions) {
   async function call(
     cmds: string | string[],
     sane_check?: boolean,
-    get_mac?: boolean
+    get_mac?: boolean,
+    silent?: boolean
   ) {
     cmds = Array.isArray(cmds) ? cmds : [cmds];
     const progs = [];
@@ -147,7 +190,7 @@ export default async function({ port, params }: FlashOptions) {
       argsAfterCmd.push('python');
     }
     const { code, out } = await spawnMultiple(
-      !(sane_check || get_mac),
+      !(sane_check || get_mac) && !silent,
       progs,
       [...argsAfterCmd, 'esptool.py', ...params, ...cmds],
       {
@@ -168,7 +211,7 @@ export default async function({ port, params }: FlashOptions) {
 
       if (pos == -1 || posEnd == -1 || id.length != 12) {
         console.log(out);
-        throw new RunError('Cannot read MAC address of ESP32 chip. Exiting.');
+        throw new RunError('Cannot read MAC address of ESP32 chip. Please check connection!');
       }
       return id;
     } else {
@@ -221,6 +264,29 @@ export default async function({ port, params }: FlashOptions) {
   // Get mac address
   console.log('*** Step 1/3: Probing ESP32 microcontroller');
   let mac = (await call('read_mac', false, true)) as string;
+
+  if(do_init) {
+    // Double check if device is an ESP32-WROVER as people just don't understand that this is important...
+    console.log('    now checking if it is an ESP32-WROVER... (takes a while)');
+
+    let wrover_check_path = path.join(__dirname, 'wrover_check_mc');
+
+      await call('erase_flash', false, false, true);
+      await call([
+        'write_flash',
+        '0xe000',
+        wrover_check_path + '/ota_data_initial.bin',
+        '0x1000',
+        wrover_check_path + '/bootloader.bin',
+        '0x8000',
+        wrover_check_path + '/partitions.bin',
+        '0x10000',
+        wrover_check_path + '/wrover_check_mc.bin',
+      ], false, false, true);
+
+      if(!await check_wrover(port.toString()))
+          throw new RunError('ESP32 is not an ESP32-WROVER or at least does not have required 4 MB PSRAM!\nPlease check: https://www.lowjs.org/supported-hardware.html');
+    }
 
   // open browser window here, no not wait and ignore any unhandled promise catch handlers
   const opn = require('opn');
@@ -284,5 +350,6 @@ export default async function({ port, params }: FlashOptions) {
     console.log('SSID:       low.js@ESP32 ' + mac);
     console.log('Password:   ' + pass);
     console.log('In this Wifi, the microcontroller has the IP 192.168.0.1');
-  }
+  } else
+    console.log('First time to flash? You need to use --init to get the required login credentials')
 }

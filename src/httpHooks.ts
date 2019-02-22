@@ -32,7 +32,7 @@ export async function prepareHttp(
       if (noPassword) {
         console.warn(
           chalk.keyword('orange')(
-            'A password was not set for the microcontroller. Please set a password via the lowsync settings set command.'
+            'Reminder: No password set! Please set one via the lowsync settings set command. Continuing...'
           )
         );
       }
