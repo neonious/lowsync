@@ -1,9 +1,21 @@
 import { dirname, relative, resolve } from 'path';
-import { keys } from 'ts-transformer-keys';
 import { ipAddress } from '../../common/src/common/regexConst';
 import { getExistingOrNewConfigPath } from '../util';
-import { ConfigFile } from './base/config';
-import { ConfigOptions } from './options';
+import { ConfigFile } from './base/configFile';
+
+export interface RemoteOptions {
+  ip: string;
+  port?: number;
+  useHttp?: boolean;
+}
+
+export interface CommandOptions {
+  syncDir?: string;
+  transpile?: boolean;
+  exclude?: string[];
+}
+
+export type ConfigOptions = CommandOptions & RemoteOptions;
 
 const confPath = getExistingOrNewConfigPath('lowsync.config.json');
 export const configFile = createNewConfig();
@@ -48,8 +60,9 @@ export function createNewConfig(): ConfigFile<ConfigOptions> {
       useHttp: {
         optional: true,
         prompt: {
-          message: 'Use HTTPS (encrypted)?'
+          message: 'Disable HTTPS and use HTTP (NOT recommended)?'
         },
+        defaultValue:false,
         type: 'boolean',
         noInit: true
       },

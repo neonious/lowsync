@@ -12,7 +12,7 @@ Synopsis
 
 .. code-block:: bash
 
-    lowsync sync [--no-transpile]
+    lowsync [sync] [--no-transpile] [--restart[=<true | false>]] [--monitor[=<true | false>]]
 
 Description
 ==================
@@ -47,17 +47,19 @@ Disables transpilation, which is enabled by default. Overrides the transpile opt
 
 .. code-block:: bash
 
+    --restart
     --restart=true
     --restart=false
 
-Enable or disable restarting the program after syncing, if any files were changed. Without this option the user will be prompted.
+Enable/disable (re)starting of the program if the filesystem on the microcontroller has changed.
 
 .. code-block:: bash
 
+    --monitor
     --monitor=true
     --monitor=false
 
-Enable or disable showing the live program output after syncing. Without this option the user will be prompted.
+Enable/disable monitoring the program after sync. Implies --restart.
 
 Output
 ==================

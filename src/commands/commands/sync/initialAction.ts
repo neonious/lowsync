@@ -1,4 +1,4 @@
-import { FsStat, FsAnyStat } from './fsStat';
+import { FsAnyStat } from './fsStat';
 import FinalAction from './synchronize/finalAction';
 
 export interface AskUserAction {

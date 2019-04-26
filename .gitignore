@@ -3,3 +3,7 @@ node_modules/
 /doc/_build/
 /syncdir/
 /lowsync.*.json
+
+finalinstall/
+internalnodemodules/
+optmodules_cache/

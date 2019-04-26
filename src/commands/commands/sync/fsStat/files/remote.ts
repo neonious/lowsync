@@ -4,7 +4,6 @@ import * as assert from "assert";
 import matchesAnyGlob from './matchesAnyGlob';
 import { FsStat } from '..';
 import { send } from '../../../../../../common/src/http/mcHttp';
-import { tryLogin } from '../../../../../config/auth';
 
 interface Response {
   href: string;
@@ -44,7 +43,7 @@ export interface GetRemoteFilesOptions {
 export default async function getRemoteFiles({
   excludeGlobs
 }: GetRemoteFilesOptions) {
-  await tryLogin();
+  
   const { responseText, headers } = await send({
     method: "PROPFIND",
     url: `/fs`,
@@ -52,7 +51,7 @@ export default async function getRemoteFiles({
       "Content-Type": "application/xml;charset=UTF-8",
       "lowrmt-md5": "1",
     }
-  }); // todo error handling here too
+  });
  
   const hadPut = (headers as any)['lowrmt-had-put']==='1';
   const result = await new Promise<PropfindData>((resolve, reject) => {

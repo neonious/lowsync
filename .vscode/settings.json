@@ -1,5 +1,6 @@
 {
   "javascript.preferences.importModuleSpecifier": "relative",
   "typescript.preferences.importModuleSpecifier": "relative",
-  "editor.lineNumbers": "on"
+  "editor.lineNumbers": "on",
+  "typescript.tsdk": "node_modules/typescript/lib/"
 }

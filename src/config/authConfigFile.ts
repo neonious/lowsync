@@ -1,6 +1,9 @@
+import { ConfigFile } from './base/configFile';
 import { getExistingOrNewConfigPath } from '../util';
-import { ConfigFile } from './base/config';
-import { AuthOptions } from './options';
+
+export interface AuthOptions {
+  password?: string;
+}
 
 const path = getExistingOrNewConfigPath('lowsync.auth.config.json');
 export const authConfigFile = new ConfigFile<AuthOptions>(path, {
