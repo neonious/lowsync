@@ -77,6 +77,11 @@ module.exports = (env, options) => {
       }),
       new CopyWebpackPlugin([
         {
+          context: path.join(__dirname, 'wrover_check_mc'),
+          from: '*.bin',
+          to: path.join(__dirname, outDir, 'wrover_check_mc')
+        },
+        {
           context: path.join(__dirname, 'esptool'),
           from: '*.py',
           to: path.join(__dirname, outDir, 'esptool')

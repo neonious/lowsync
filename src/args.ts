@@ -261,36 +261,36 @@ const argv1 = yargs
         .demandCommand(1, 1);
     }
   )
-  .command('install <packages..>', 'Install npm packages.', yargs => {
-    return yargs
-      .positional('packages', {
-        describe:
-          'The npm packages to install. See the npm documentation for more details.'
-      })
-      .check(argv => {
-        const { packages } = argv;
-        if (!packages.length) {
-          throw 'Must specify packages to install.';
-        }
-        return true;
-      })
-      .demandCommand(0, 0);
-  })
-  .command('uninstall <packages..>', 'Uninstall npm packages.', yargs => {
-    return yargs
-      .positional('packages', {
-        describe:
-          'The npm packages to uninstall. See the npm documentation for more details.'
-      })
-      .check(argv => {
-        const { packages } = argv;
-        if (!packages.length) {
-          throw 'Must specify packages to uninstall.';
-        }
-        return true;
-      })
-      .demandCommand(0, 0);
-  })
+  // .command('install <packages..>', 'Install npm packages.', yargs => {
+  //   return yargs
+  //     .positional('packages', {
+  //       describe:
+  //         'The npm packages to install. See the npm documentation for more details.'
+  //     })
+  //     .check(argv => {
+  //       const { packages } = argv;
+  //       if (!packages.length) {
+  //         throw 'Must specify packages to install.';
+  //       }
+  //       return true;
+  //     })
+  //     .demandCommand(0, 0);
+  // })
+  // .command('uninstall <packages..>', 'Uninstall npm packages.', yargs => {
+  //   return yargs
+  //     .positional('packages', {
+  //       describe:
+  //         'The npm packages to uninstall. See the npm documentation for more details.'
+  //     })
+  //     .check(argv => {
+  //       const { packages } = argv;
+  //       if (!packages.length) {
+  //         throw 'Must specify packages to uninstall.';
+  //       }
+  //       return true;
+  //     })
+  //     .demandCommand(0, 0);
+  // })
   .demandCommand(1, 1)
   .fail(((msg: string, err: Error, yargs: any) => {
     const help = yargs.help();

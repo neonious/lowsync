@@ -20,6 +20,7 @@ function jsonParse(str: string, type: SettingDef['$type']) {
     case 'boolean':
       if (str === '') return null;
       return JSON.parse(str);
+    case 'select':
     case 'string':
     case 'ip':
     case 'password':
