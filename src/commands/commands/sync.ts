@@ -198,7 +198,7 @@ export default async function(options: SyncOptions) {
     if (destside === 'mc') mcChanged = true;
   }
 
-  const { restartOnChange: _rs, monitor: _mon } = options;
+  const { restart: _rs, monitor: _mon } = options;
 
   if (!mcChanged && !_mon) return;
 
@@ -209,10 +209,10 @@ export default async function(options: SyncOptions) {
     defaultAnswer: true
   });
 
-  let restartOnChange = false;
+  let restart = false;
   if (_rs !== false) {
     if (_rs === true || monitor) {
-      restartOnChange = true;
+      restart = true;
     } else {
       if (mcChanged) {
         const status = await getProgramStatus();
@@ -221,11 +221,11 @@ export default async function(options: SyncOptions) {
             status === 'stopped'
               ? 'Start the program now?'
               : 'Restart the currently running program for any changes to take effect?';
-          restartOnChange = await promptBool({
+          restart = await promptBool({
             message:
               'The filesystem of the microcontroller has changed. ' +
               msg +
-              ' (Use the --restartOnChange command line option to remove this prompt and enable/disable restart after sync.)',
+              ' (Use the --restart command line option to remove this prompt and enable/disable restart after sync.)',
             default: true
           });
         }
@@ -233,7 +233,7 @@ export default async function(options: SyncOptions) {
     }
   }
 
-  if (restartOnChange && mcChanged) {
+  if (restart && mcChanged) {
     console.log('Restarting program...');
     await restartProgram();
   }
