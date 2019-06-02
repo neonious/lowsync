@@ -26,7 +26,7 @@ $ npm install lowsync
 You then have to always call lowsync with path however:
 
 ```
-node_modules/.bin/lowsync ...
+node_modules/.bin/lowsync [your parameters...]
 ```
 
 ## Usage

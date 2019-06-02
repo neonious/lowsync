@@ -30,7 +30,7 @@ You then have to always call lowsync with path however:
 
 .. code-block:: bash
 
-	node_modules/.bin/lowsync ...
+	node_modules/.bin/lowsync [your parameters...]
 
 After installing lowsync, run
 
