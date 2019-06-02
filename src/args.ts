@@ -58,7 +58,7 @@ export interface StopOptions {
 export interface SyncOptions {
   type: 'sync';
   noTranspile?: boolean;
-  restart?: boolean;
+  restartOnChange?: boolean;
   monitor?: boolean;
 }
 
@@ -117,7 +117,7 @@ const argv1 = yargs
           describe:
             'Disable the transpilation of source files (only >=ES6 JavaScript files, NO TypeScript, etc.) to ES5. Be sure that you know what you are doing before using this option!'
         })
-        .option('restart', {
+        .option('restartOnChange', {
           type: 'boolean',
           default: undefined,
           describe:
@@ -127,7 +127,7 @@ const argv1 = yargs
           type: 'boolean',
           default: undefined,
           describe:
-            'Enable/disable monitoring the program after sync. Implies --restart. Optionally you may append =<true|false> to this option.'
+            'Enable/disable monitoring the program after sync. Implies --restartOnChange. Optionally you may append =<true|false> to this option.'
         })
         .demandCommand(0, 0);
     }
@@ -313,8 +313,8 @@ if (flashidx !== -1) {
 unhook();
 
 function parseSyncOptions(argv: any): SyncOptions {
-  const { noTranspile, restart, monitor } = argv;
-  return { type: 'sync', noTranspile, restart, monitor };
+  const { noTranspile, restartOnChange, monitor } = argv;
+  return { type: 'sync', noTranspile, restartOnChange, monitor };
 }
 
 export function parseArguments(): Options {

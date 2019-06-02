@@ -54,10 +54,10 @@ export async function monitor(options: MonitorOptions = {}) {
 
 let prepped = false;
 
-export async function prepareWebsocket() {
+async function prepareWebsocket() {
   if (!prepped) {
     prepped = true;
-    await httpApi.IsLoggedIn(); // so that websocket works
+    await httpApi.IsLoggedIn(); // todo so that websocket works
     const opts = await prepareHttp(false);
     onBeforeWebsocket(options => {
       return { ...options, ...opts };
