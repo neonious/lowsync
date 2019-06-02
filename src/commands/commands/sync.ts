@@ -37,6 +37,7 @@ export default async function(options: SyncOptions) {
   function exclude() {
     return [
       ...(config.exclude || []),
+      '**/.*',
       '**/lowsync.auth.config.json',
       '**/lowsync.sync.config.json',
       '**/lowsync.config.json'

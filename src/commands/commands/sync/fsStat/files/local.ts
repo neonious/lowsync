@@ -13,7 +13,7 @@ async function getStatsForDir(
   for (const relPath of relPaths) {
     const filePath = path.join(dir, relPath);
     const relPathFromRoot = path.relative(rootDir, filePath);
-    if (matchesAnyGlob(relPathFromRoot.replace(/\\/g, '/'), excludeGlobs))
+    if (matchesAnyGlob('/' + relPathFromRoot.replace(/\\/g, '/'), excludeGlobs))
       continue;
     const stat = await fs.stat(filePath);
     if (stat.isDirectory()) {

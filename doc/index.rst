@@ -12,11 +12,25 @@ A tool to program the neonious one and other low.js for ESP32 based devices with
 Getting started
 ==================
 
-First, install lowsync
+First, install lowsync, by calling the following as Administrator/root:
 
 .. code-block:: bash
 
-    npm install -g lowsync
+    npm install --unsafe-perm -g lowsync
+
+The option `--unsafe-perm` lets the install script run as root instead of letting npm change the user to nobody before running the install script. This is required for the serialport module.
+
+Alternativly, install as normal user into your local node_modules directory:
+
+.. code-block:: bash
+
+	npm install lowsync
+
+You then have to always call lowsync with path however:
+
+.. code-block:: bash
+
+	node_modules/.bin/lowsync ...
 
 After installing lowsync, run
 
