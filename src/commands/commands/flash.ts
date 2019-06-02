@@ -7,7 +7,6 @@ import * as os from 'os';
 import * as path from 'path';
 import { FlashOptions } from '../../args';
 import { RunError } from '../../runError';
-import { resolveCname } from 'dns';
 
 const SerialPort = require('serialport');
 const Readline = require('@serialport/parser-readline');
