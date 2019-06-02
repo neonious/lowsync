@@ -54,7 +54,7 @@ export async function monitor(options: MonitorOptions = {}) {
 
 let prepped = false;
 
-async function prepareWebsocket() {
+export async function prepareWebsocket() {
   if (!prepped) {
     prepped = true;
     await httpApi.IsLoggedIn(); // todo so that websocket works
