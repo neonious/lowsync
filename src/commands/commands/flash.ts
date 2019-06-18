@@ -243,10 +243,6 @@ export default async function({ port, params }: FlashOptions) {
     }
   }
 
-  if (params.indexOf('-b') == -1) {
-    params.push('-b');
-    params.push((921600).toString());
-  }
   params.push('-p');
   params.push(port.toString());
 

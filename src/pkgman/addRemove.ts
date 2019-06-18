@@ -1,5 +1,6 @@
 import * as cliProgress from 'cli-progress';
 import { v4 } from 'uuid';
+import chalk from 'chalk';
 import { httpApi } from '../../common/src/http/httpApiService';
 import { websocketApi } from '../../common/src/webSocket/socketPool';
 import { InstallOptions, UninstallOptions } from '../args';
@@ -60,7 +61,7 @@ export async function addRemove({
         case 'fail': {
           const { inconsistent, insufficientSpace, serverRawBody } = obj;
           const errs = [];
-          errs.push('An error has occurred.');
+          errs.push('An error has occurred. Please make sure the microcontroller has access to the Internet.\nPlease read https://www.lowjs.org/documentation/flash-space.html for information how to make low.js connect to your Router\'s Wifi.');
           if (insufficientSpace) {
             errs.push('The microcontroller has no sufficient space left.');
           }
@@ -80,8 +81,12 @@ export async function addRemove({
           progressBar.stop();
           subscription.unsubscribe();
 
-          throw new RunError(errs.join('\n'));
+	  // TR 2019.06.17 - we do not want the whole stack information!
+          console.log(chalk.white.bgRed(errs.join('\n')));
+//          throw new RunError(errs.join('\n'));
         }
+	case 'add': break;
+	case 'remove': break;
         default:
           throw new Error(
             `Unknown pkgman websocket object type '${(obj as any).type}'.`
