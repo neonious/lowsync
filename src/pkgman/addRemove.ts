@@ -47,6 +47,9 @@ export async function addRemove({
         }
         case 'done': {
           const { finalPkgs } = obj;
+          progressBar.stop();
+          subscription.unsubscribe();
+
           console.log(
             `Success! The following packages are installed on the microcontroller: ${JSON.stringify(
               finalPkgs,
@@ -54,8 +57,7 @@ export async function addRemove({
               4
             )}`
           );
-          progressBar.stop();
-          subscription.unsubscribe();
+	  process.exit();	// TR2019.06.19 - program continues runningeven though we have the error. Make sure we are quitting
           break;
         }
         case 'fail': {
@@ -83,6 +85,8 @@ export async function addRemove({
 
 	  // TR 2019.06.17 - we do not want the whole stack information!
           console.log(chalk.white.bgRed(errs.join('\n')));
+	  process.exit();	// TR2019.06.19 - program continues runningeven though we have the error. Make sure we are quitting
+          break;
 //          throw new RunError(errs.join('\n'));
         }
 	case 'add': break;

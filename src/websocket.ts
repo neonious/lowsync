@@ -46,7 +46,7 @@ export async function monitor(options: MonitorOptions = {}) {
 
   await prepareWebsocket();
 
-  console.log(chalk.bold('Retrieving microcontroller output...'));
+  console.log(chalk.bold("--- User program's output: ---"));
   getConsoleMessages().subscribe(msg => {
     writeConsole(msg);
   });
