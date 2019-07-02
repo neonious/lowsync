@@ -85,7 +85,7 @@ export async function addRemove({
 
 	  // TR 2019.06.17 - we do not want the whole stack information!
           console.log(chalk.white.bgRed(errs.join('\n')));
-	  process.exit();	// TR2019.06.19 - program continues runningeven though we have the error. Make sure we are quitting
+	  process.exit(1);	// TR2019.06.19 - program continues runningeven though we have the error. Make sure we are quitting
           break;
 //          throw new RunError(errs.join('\n'));
         }
