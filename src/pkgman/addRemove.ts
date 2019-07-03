@@ -63,17 +63,27 @@ export async function addRemove({
         case 'fail': {
           const { inconsistent, insufficientSpace, serverRawBody } = obj;
           const errs = [];
-          errs.push('An error has occurred. Please make sure the microcontroller has access to the Internet.\nPlease read https://www.lowjs.org/documentation/flash-space.html for information how to make low.js connect to your Router\'s Wifi.');
-          if (insufficientSpace) {
-            errs.push('The microcontroller has no sufficient space left.');
-          }
+          if (insufficientSpace)
+            errs.push('Not enough space left on file system to install the module(s). Aborting.');
+          else if(!serverRawBody)
+            errs.push('An error has occurred. Please make sure the microcontroller has access to the Internet.\nPlease read https://www.lowjs.org/documentation/flash-space.html for information how to make low.js connect to your Router\'s Wifi.');
+          else
+            errs.push('An error has occurred.');
           if (serverRawBody) {
-            const { stage, message } = JSON.parse(serverRawBody);
-            errs.push(
-              `Error in '${stage}' stage.`,
-              'Diagnostic output:',
-              message
-            );
+            try {
+	            const { stage, message } = JSON.parse(serverRawBody);
+	            errs.push(
+        	      `Error in '${stage}' stage.`,
+              		'Diagnostic output:',
+		              message
+            		);
+		} catch(e) {
+	            errs.push(
+        	      `Error.`,
+              		'Diagnostic output from server:',
+		              serverRawBody
+            		);
+		}
           }
           if (inconsistent) {
             errs.push(
