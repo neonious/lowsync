@@ -35,7 +35,6 @@ function check_wrover(path: string) {
                 });
             } else if(line | 0) {
                 let size = line | 0;
-                ("FLASH SIZE " + size);
                 clearTimeout(failTimer);
                 port.close(() => {
                     resolve(size);
@@ -335,7 +334,6 @@ export default async function({ port, params }: FlashOptions) {
         app_data_file
     ]);
   } else {
-      console.log("DATA V ", data.length);
     await fs.writeFile(boot_partition_file, data.slice(0, 0x8000));
     await fs.writeFile(app_data_file, data.slice(0x8000));
     await call([
@@ -378,5 +376,5 @@ export default async function({ port, params }: FlashOptions) {
   } else
     console.log('First time to flash? You need to use --init to get the required login credentials')
   if(!ideVersion && ideVersionSupported)
-    console.log(chalk.white.bgYellow('Note: Your device has enough flash space to support the low.js version with on-board web-based IDE + debugger and over-the-air updating. Please check the neonious store https://www.neonious.com/Store for more information!'));
+    console.log(chalk.bgYellow('Note: Your device has enough flash space to support the low.js version with on-board web-based IDE + debugger and over-the-air updating. Please check the neonious store https://www.neonious.com/Store for more information!'));
 }
