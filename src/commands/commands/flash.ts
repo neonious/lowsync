@@ -7,6 +7,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { FlashOptions } from '../../args';
 import { RunError } from '../../runError';
+import chalk from 'chalk';
 
 const SerialPort = require('serialport');
 const Readline = require('@serialport/parser-readline');
@@ -27,15 +28,17 @@ function check_wrover(path: string) {
 
         parser.on('data', (line: string) => {
             line = line.trim();
-            if(line == "IS_WROVER") {
-                clearTimeout(failTimer);
-                port.close(() => {
-                    resolve(true);
-                });
-            } else if(line == "NOT_WROVER") {
+            if(line == "NOT_WROVER") {
                 clearTimeout(failTimer);
                 port.close(() => {
                     resolve(false);
+                });
+            } else if(line | 0) {
+                let size = line | 0;
+                ("FLASH SIZE " + size);
+                clearTimeout(failTimer);
+                port.close(() => {
+                    resolve(size);
                 });
             }
         });
@@ -93,13 +96,13 @@ export default async function({ port, params }: FlashOptions) {
     check();
   }
 
-  function get_signed_data(mac: string) {
+  function get_signed_data(mac: string, ideVersion: boolean) {
     return new Promise<Buffer>((resolve, reject) => {
       https.get(
         {
           hostname: 'neonious.com',
           port: 8443,
-          path: `/GetFlashData?mac=${mac}`,
+          path: `/GetFlashData?mac=${mac}&ideVersion=` + (ideVersion ? 1 : 0),
           rejectUnauthorized: false,
           method: 'GET'
         },
@@ -225,12 +228,18 @@ export default async function({ port, params }: FlashOptions) {
     setDoneErasing();
   }
 
+  let ideVersion = false;
   let do_init = false,
     reset_network = false;
   let pos;
 
   if (!params) params = [];
   else {
+    pos = params.indexOf('--ide-ota');
+    if (pos >= 0) {
+        ideVersion = true;
+        params.splice(pos, 1);
+    }
     pos = params.indexOf('--init');
     if (pos >= 0) {
       do_init = true;
@@ -259,6 +268,7 @@ export default async function({ port, params }: FlashOptions) {
   // Get mac address
   console.log('*** Step 1/3: Probing ESP32 microcontroller');
   let mac = (await call('read_mac', false, true)) as string;
+  let ideVersionSupported = false;
 
   if(do_init) {
     // Double check if device is an ESP32-WROVER as people just don't understand that this is important...
@@ -279,8 +289,11 @@ export default async function({ port, params }: FlashOptions) {
         wrover_check_path + '/wrover_check_mc.bin',
       ], false, false, true);
 
-      if(!await check_wrover(port.toString()))
+      let size = await check_wrover(port.toString());
+      if(!size)
           throw new RunError('ESP32 is not an ESP32-WROVER or at least does not have required 4 MB PSRAM!\nPlease check: https://www.lowjs.org/supported-hardware.html');
+      if(size >= 9 * 1024 * 1024)
+        ideVersionSupported = true;
     }
 
   // open browser window here, no not wait and ignore any unhandled promise catch handlers
@@ -293,12 +306,16 @@ export default async function({ port, params }: FlashOptions) {
     console.log(
       '*** Step 2/3: Erasing flash and downloading image in parallel'
     );
-    data = (await Promise.all([get_signed_data(mac), erase_flash()]))[0];
+    data = (await Promise.all([get_signed_data(mac, ideVersion), erase_flash()]))[0];
   } else {
     console.log('*** Step 2/3: Downloading image');
     setDoneErasing();
-    data = await get_signed_data(mac);
+    data = await get_signed_data(mac, ideVersion);
   }
+  if(data.length == 0 && ideVersion)
+    throw new RunError('The IDE+OTA version of low.js not licensed for this device. Please buy a license in the neonious store at https://www.neonious.com/Store');
+    if(ideVersion && !ideVersionSupported)
+    throw new RunError('The IDE+OTA version of low.js is not supported on this device, as it has less than 9 MB of flash space available.');
   data.writeUInt8(reset_network ? 1 : 0, data.length - 33);
 
   console.log('*** Step 3/3: Flashing image');
@@ -307,15 +324,28 @@ export default async function({ port, params }: FlashOptions) {
   let boot_partition_file = path.join(dir, 'part1');
   let app_data_file = path.join(dir, 'part2');
 
-  await fs.writeFile(boot_partition_file, data.slice(0, 0x8000));
-  await fs.writeFile(app_data_file, data.slice(0x8000));
-  await call([
-    'write_flash',
-    '0x1000',
-    boot_partition_file,
-    '0x10000',
-    app_data_file
-  ]);
+  if(ideVersion) {
+    await fs.writeFile(boot_partition_file, data.slice(0, 0x1F0000));
+    await fs.writeFile(app_data_file, data.slice(0x1F0000));
+    await call([
+        'write_flash',
+        '0x1000',
+        boot_partition_file,
+        '0x400000',
+        app_data_file
+    ]);
+  } else {
+      console.log("DATA V ", data.length);
+    await fs.writeFile(boot_partition_file, data.slice(0, 0x8000));
+    await fs.writeFile(app_data_file, data.slice(0x8000));
+    await call([
+        'write_flash',
+        '0x1000',
+        boot_partition_file,
+        '0x10000',
+        app_data_file
+    ]);
+  }
   try {
     await fs.unlink(boot_partition_file);
     await fs.unlink(app_data_file);
@@ -347,4 +377,6 @@ export default async function({ port, params }: FlashOptions) {
     console.log('In this Wifi, the microcontroller has the IP 192.168.0.1');
   } else
     console.log('First time to flash? You need to use --init to get the required login credentials')
+  if(!ideVersion && ideVersionSupported)
+    console.log(chalk.white.bgYellow('Note: Your device has enough flash space to support the low.js version with on-board web-based IDE + debugger and over-the-air updating. Please check the neonious store https://www.neonious.com/Store for more information!'));
 }

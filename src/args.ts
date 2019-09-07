@@ -242,6 +242,12 @@ const argv1 = yargs
           describe:
             'Resets to factory settings by erasing flash. Use this on first flashing.'
         })
+        .option('ide-ota', {
+          type: 'boolean',
+          default: false,
+          describe:
+            'Flashes the IDE+OTA version of low.js. Requires a registered license bought in the shop at neonious.com/Store'
+        })
         .option('reset-network', {
           type: 'boolean',
           default: false,
