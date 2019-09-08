@@ -312,7 +312,7 @@ export default async function({ port, params }: FlashOptions) {
     data = await get_signed_data(mac, ideVersion);
   }
   if(data.length == 0 && ideVersion)
-    throw new RunError('The IDE+OTA version of low.js not licensed for this device. Please buy a license in the neonious store at https://www.neonious.com/Store');
+    throw new RunError('The IDE+OTA version of low.js not licensed for this device with the code ' + mac + '. Please buy a license in the neonious store at https://www.neonious.com/Store');
     if(ideVersion && !ideVersionSupported)
     throw new RunError('The IDE+OTA version of low.js is not supported on this device, as it has less than 9 MB of flash space available.');
   data.writeUInt8(reset_network ? 1 : 0, data.length - 33);
