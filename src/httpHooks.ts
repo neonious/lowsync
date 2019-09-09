@@ -32,7 +32,7 @@ export async function prepareHttp(
       if (noPassword) {
         console.warn(
           chalk.keyword('orange')(
-            'Reminder: No password set! Please set one via the lowsync settings set command. Continuing...'
+            'Reminder: No password set! Please set one via the lowsync settings set web.password="..." command. Continuing...'
           )
         );
       }
