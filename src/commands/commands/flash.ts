@@ -33,8 +33,8 @@ function check_wrover(path: string) {
                 port.close(() => {
                     resolve(false);
                 });
-            } else if(line | 0) {
-                let size = line | 0;
+            } else if((line as any) | 0) {
+                let size = (line as any) | 0;
                 clearTimeout(failTimer);
                 port.close(() => {
                     resolve(size);
@@ -135,7 +135,7 @@ export default async function({ port, params }: FlashOptions) {
     args: string[],
     opts: SpawnOptions
   ) {
-	// Faster output
+	// Faster output than if we redirect to our stdout
 	if(writestd) {
 		if(!opts)
 			opts = {};
@@ -146,14 +146,16 @@ export default async function({ port, params }: FlashOptions) {
     return new Promise<{ code: number; out: string }>((resolve, reject) => {
       p.on('error', reject);
       let out = '';
-      p.stdout.on('data', data => {
-        if (!writestd) out += data;
-        else process.stdout.write(data);
-      });
-      p.stderr.on('data', data => {
-        if (!writestd) out += data;
-        else process.stderr.write(data);
-      });
+      if(p.stdout)
+	      p.stdout.on('data', data => {
+	        if (!writestd) out += data;
+	        else process.stdout.write(data);	// old
+	      });
+      if(p.stderr)
+	      p.stderr.on('data', data => {
+	        if (!writestd) out += data;
+	        else process.stderr.write(data);	// old
+	      });
       p.on('close', code => {
         resolve({ code, out });
       });
