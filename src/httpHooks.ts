@@ -75,7 +75,7 @@ onBeforeEachHttp(async (options: MyOptions) => {
     console.log(
       `Testing connection to microcontroller at ${url}... This can take a while if your connection is bad. If the url is incorrect, please abort lowsync and change the config file or run lowsync init.`
     );
-  }, 4000);
+  }, 10000);
 
   return options;
 });

@@ -135,6 +135,13 @@ export default async function({ port, params }: FlashOptions) {
     args: string[],
     opts: SpawnOptions
   ) {
+	// Faster output
+	if(writestd) {
+		if(!opts)
+			opts = {};
+		opts.stdio = ['inherit', 'inherit', 'inherit'];
+	}
+
     const p = spawn(prog, args, opts);
     return new Promise<{ code: number; out: string }>((resolve, reject) => {
       p.on('error', reject);
@@ -259,7 +266,7 @@ export default async function({ port, params }: FlashOptions) {
     console.log('*** esptool cannot be used.');
     console.log('Please check if you have Python installed.');
     console.log(
-      "If yes, please check if you have pyserial installed (if not try 'pip install pyserial')."
+      "If yes, please check if you have pyserial installed (if not try 'pip install pyserial' or 'py -m pip install pyserial' depending on the system)."
     );
     return;
   }
