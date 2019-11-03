@@ -67,10 +67,13 @@ export type SyncFile = SyncFileAdd | SyncFileRemove;
 function transpileJavaScript(
   source: string
 ): { compiled: string; map: string } {
-  const babel = require('babel-core');
+  const babel = require('@babel/core');
   const result = babel.transform(source, {
-    presets: [require('babel-preset-es2015'), require('babel-preset-stage-2')],
-    sourceMaps: 'both'
+    presets: [require("@babel/preset-env")],
+    sourceMaps: 'both',
+    parserOpts: {
+            allowReturnOutsideFunction: true
+          }
   });
   const compiled = result.code;
   const map = JSON.stringify(result.map);
