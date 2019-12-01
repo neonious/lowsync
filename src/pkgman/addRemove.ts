@@ -57,7 +57,7 @@ export async function addRemove({
               4
             )}`
           );
-	  process.exit();	// TR2019.06.19 - program continues runningeven though we have the error. Make sure we are quitting
+	  process.exit();	// TR2019.06.19 - program continues running even though we have the error. Make sure we are quitting
           break;
         }
         case 'fail': {
@@ -93,7 +93,8 @@ export async function addRemove({
           progressBar.stop();
           subscription.unsubscribe();
 
-	  // TR 2019.06.17 - we do not want the whole stack information!
+      // TR 2019.06.17 - we do not want the whole stack information!
+      // TR 2019.12.01 - throw new RunError is supposed to not give stack information. Want went wrong?
           console.log(chalk.white.bgRed(errs.join('\n')));
 	  process.exit(1);	// TR2019.06.19 - program continues runningeven though we have the error. Make sure we are quitting
           break;

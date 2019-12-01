@@ -28,6 +28,8 @@ import {
 } from './sync/synchronize/syncFile';
 
 export default async function(options: SyncOptions) {
+  if(!options.toMc && !options.toPc)
+    throw new RunError("Either --to-mc or --to-pc must be true");
   const config = {
     syncDir: (await configFile.getKey('syncDir'))!,
     exclude: await configFile.getKey('exclude'),
@@ -72,7 +74,7 @@ export default async function(options: SyncOptions) {
       const stat = await fs.stat(config.syncDir);
       if (!stat.isDirectory()) {
         throw new RunError(
-          `Cannot synchonize with directory '${
+          `Cannot syncronize with directory '${
             config.syncDir
           }' because a file exists in the same location.`
         );
@@ -139,15 +141,22 @@ export default async function(options: SyncOptions) {
 
   const baseFilesStruct = await loadSyncDataFile(syncFilePath());
 
-  const actions = getInitialActions({
+  let actions = getInitialActions({
     local: localFileStruct,
     remote: remoteFilesStruct,
     base: baseFilesStruct
   });
 
+  if(!options.toMc)
+    actions = actions.filter((action) => { return action.type != 'syncToRemote'; });
+  if(!options.toPc)
+    actions = actions.filter((action) => { return action.type != 'syncToLocal'; });
   const userFinalActions = await askUser({
     actions: actions.filter(isAskUserAction)
-  });
+    },
+    options.toMc,
+    options.toPc
+  );
 
   const finalActions = actions.filter(isFinalAction).concat(userFinalActions);
 
@@ -161,7 +170,7 @@ export default async function(options: SyncOptions) {
       a => a.type === 'syncToLocal' || a.type === 'syncToRemote'
     ).length
   ) {
-    console.log('Nothing to synchonize.');
+    console.log('Nothing to syncronize.');
   } else {
     getFilesToSynchronize({
       local: localFileStruct,

@@ -81,7 +81,7 @@ export interface AskUserOptions {
   actions: AskUserAction[];
 }
 
-export default async function askUser({ actions }: AskUserOptions) {
+export default async function askUser({ actions }: AskUserOptions, to_mc: boolean, to_pc: boolean) {
   const result: FinalAction[] = [];
 
   if (!actions.length) return result;
@@ -115,30 +115,32 @@ export default async function askUser({ actions }: AskUserOptions) {
 
     type Value = SyncActionType | 'skip';
 
-    const action = await promptList<Value>({
-      message: `How would you like to handle ${no}. ${normalizePath(
-        relativePath
-      )} ? (Use arrow keys)`,
-      choices: [
-        {
+    let choices = [] as { name: string; value: Value; }[];
+    if(to_mc)
+        choices.push({
           name: `Overwrite microcontroller version with PC version (${[
             'discards microcontroller changes',
             ...getWarnings(local, remote)
           ].join(', ')})`,
           value: 'syncToRemote'
-        },
-        {
+        } as { name: string; value: Value; });
+    if(to_pc)
+        choices.push({
           name: `Overwrite PC version with microcontroller version (${[
             'discards PC changes',
             ...getWarnings(remote, local)
           ].join(', ')})`,
           value: 'syncToLocal'
-        },
-        {
+        } as { name: string; value: Value; });
+    choices.push({
           name: `Skip sync of this file/folder`,
           value: 'skip'
-        }
-      ]
+        } as { name: string; value: Value; });
+    const action = await promptList<Value>({
+      message: `How would you like to handle ${no}. ${normalizePath(
+        relativePath
+      )} ? (Use arrow keys)`,
+      choices
     });
 
     if (action !== 'skip') {

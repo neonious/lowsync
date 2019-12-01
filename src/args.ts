@@ -60,6 +60,8 @@ export interface SyncOptions {
   noTranspile?: boolean;
   restart?: boolean;
   monitor?: boolean;
+  toPc: boolean;
+  toMc: boolean;
 }
 
 export interface MonitorOptions {
@@ -68,9 +70,21 @@ export interface MonitorOptions {
   global: boolean;
 }
 
+export interface BuildOptions {
+  type: 'build';
+  firmwareFile: string;
+  firmwareConfig: string;
+}
+
 export interface FlashOptions {
   type: 'flash';
   port: string;
+  init: boolean;
+  resetNetwork: boolean;
+  pro: boolean;
+  proKey?: string;
+  firmwareFile?: string;
+  firmwareConfig?: string;
   params: string[];
 }
 
@@ -97,6 +111,7 @@ export type Options =
   | StopOptions
   | SyncOptions
   | MonitorOptions
+  | BuildOptions
   | FlashOptions
   | UpdateOptions
   | InstallOptions
@@ -108,7 +123,7 @@ const argv1 = yargs
   .locale('en') // so that yargs generated text is in english, just like the other text
   .command(
     ['[sync]', '$0'],
-    'Sync and, by default, transpile the files from this computer to the microcontroller.',
+    'Sync and, by default, transpile the files being transfered from this computer to the microcontroller.',
     yargs => {
       return yargs
         .option('no-transpile', {
@@ -116,6 +131,18 @@ const argv1 = yargs
           default: undefined,
           describe:
             'Disable the transpilation of source files (only >=ES6 JavaScript files, NO TypeScript, etc.) to ES5. Be sure that you know what you are doing before using this option!'
+        })
+        .option('to-mc', {
+          type: 'boolean',
+          default: true,
+          describe:
+            'Sync in direction PC to microcontroller. To disable, append =false to this option.'
+        })
+        .option('to-pc', {
+          type: 'boolean',
+          default: true,
+          describe:
+          'Sync in direction microcontroller to PC. To disable, append =false to this option.'
         })
         .option('restart', {
           type: 'boolean',
@@ -209,7 +236,7 @@ const argv1 = yargs
   )
   .command(
     'monitor',
-    'Show the output of the running program (process.stdout).',
+    'Relay console input and output (shows the output of the running program and allows you to enter input).',
     yargs =>
       yargs
         .option('restart', {
@@ -226,48 +253,7 @@ const argv1 = yargs
         })
         .demandCommand(0, 0)
   )
-  .command(
-    'flash <port> [params..]',
-    'Flash low.js to generic ESP32-WROVER microcontroller board. For experts, also parameters of esptool are supported (see https://github.com/espressif/esptool for more information).',
-    yargs => {
-      return yargs
-        .positional('port', {
-          type: 'string',
-          describe:
-            'The serial port which the USB/serial chip of the ESP32 board creates. Under Windows this usually starts with "COM", on other systems with "/dev/tty".'
-        })
-        .option('init', {
-          type: 'boolean',
-          default: false,
-          describe:
-            'Resets to factory settings by erasing flash. Use this on first flashing.'
-        })
-        .option('ide-ota', {
-          type: 'boolean',
-          default: false,
-          describe:
-            'Flashes the IDE+OTA version of low.js. Requires a registered license bought in the shop at neonious.com/Store'
-        })
-        .option('reset-network', {
-          type: 'boolean',
-          default: false,
-          describe:
-            'Resets network settings to Wifi access point and outputs the credentials to connect.'
-        })
-        .demandCommand(0, 0);
-    }
-  )
-  .command(
-    'update',
-    'Display available updates for the neonious one and/or install them.',
-    yargs => {
-      return yargs
-        .command('show', 'Display available updates, if any.')
-        .command('install', 'Update the neonious one.')
-        .demandCommand(1, 1);
-    }
-  )
-  .command('install <packages..>', 'Install npm packages.', yargs => {
+  .command('install <packages..>', 'Trigger installion of npm packages over-the-air.', yargs => {
     return yargs
       .positional('packages', {
         describe:
@@ -282,7 +268,7 @@ const argv1 = yargs
       })
       .demandCommand(0, 0);
   })
-  .command('uninstall <packages..>', 'Uninstall npm packages.', yargs => {
+  .command('uninstall <packages..>', 'Uninstall npm packages (also requires Internet).', yargs => {
     return yargs
       .positional('packages', {
         describe:
@@ -297,6 +283,80 @@ const argv1 = yargs
       })
       .demandCommand(0, 0);
   })
+  .command(
+    'update',
+    'Display available updates for low.js Professional/neonious one and/or trigger the installion of them over-the-air.',
+    yargs => {
+      return yargs
+        .command('show', 'Display available updates, if any.')
+        .command('install', 'Update the neonious one.')
+        .demandCommand(1, 1);
+    }
+  )
+  .command(
+    'flash [params..]',
+    'Flash low.js to generic ESP32-WROVER microcontroller board. For experts, also parameters of esptool are supported (see https://github.com/espressif/esptool for more information).',
+    yargs => {
+      return yargs
+        .option('port', {
+          type: 'string',
+          default: undefined,
+          describe:
+            'The serial port which the USB/serial chip of the ESP32 board creates. Under Windows this usually starts with "COM" (find out the correct one with the Device Manager), on other systems with "/dev/tty" (check file system to find the correct one).'
+        })
+        .option('init', {
+          type: 'boolean',
+          default: false,
+          describe:
+            'Resets to factory settings by erasing flash. Use this on first flashing.'
+        })
+        .option('pro', {
+          type: 'boolean',
+          default: false,
+          describe:
+            'Flashes low.js Professional. Requires a registered license bought in the shop at https://www.neonious.com/Store'
+        })
+        .option('pro-key', {
+          type: 'string',
+          default: undefined,
+          describe:
+            'Flashing low.js Professional requires either a license connected to the specific board or to a key, which you can enter here.'
+        })
+        .option('firmware-file', {
+          type: 'string',
+          default: undefined,
+          describe:
+            'If a custom pre-built firmware shall be flashed, specify the path to the firmware file here.'
+        })
+        .option('firmware-config', {
+          type: 'string',
+          default: undefined,
+          describe:
+            'If a custom firmware shall be built and flashed, specify the configuration file for the firmware here.'
+        })
+        .option('reset-network', {
+          type: 'boolean',
+          default: false,
+          describe:
+            'Resets network settings to Wifi access point and outputs the credentials to connect.'
+        })
+        .demandCommand(0, 0);
+    }
+  )
+  .command(
+    'build <firmware-file> [params..]',
+    'Build a custom firmware which can be flashed via lowsync or over the air with lowsys.createFirmwareStream.',
+    yargs => {
+      return yargs
+        .option('firmware-config', {
+          type: 'string',
+          default: undefined,
+          describe:
+            'Specify the configuration file for the firmware here.'
+        })
+        .demandCommand(0, 0);
+    }
+  )
   .demandCommand(1, 1)
   .fail(((msg: string, err: Error, yargs: any) => {
     const help = yargs.help();
@@ -309,8 +369,29 @@ const flashidx = process.argv.indexOf('flash');
 const other: string[] = [];
 let argv: Arguments<any>;
 if (flashidx !== -1) {
-  other.push(...process.argv.slice(flashidx + 2));
-  const args = process.argv.slice(flashidx, flashidx + 2);
+  // We are flashing
+  const flashParams = {
+    '--help': 1,
+    '--version': 1,
+    '--port': 1,
+    '--init': 1,
+    '--reset-network': 1,
+      '--pro': 1,
+      '--pro-key': 1,
+      '--firmware-file': 1,
+      '--firmware-config': 1
+  } as any;
+  let args = [];
+  for(let i = 2; i < process.argv.length; i++) {
+      let arg = process.argv[i];
+      let pos = arg.indexOf('=');
+      if(pos >= 0)
+        arg = arg.substr(0, pos);
+    if(i != flashidx && !flashParams[arg])
+      other.push(process.argv[i]);
+    else
+      args.push(process.argv[i])
+  }
   argv = argv1.parse(args);
 } else {
   argv = argv1.argv;
@@ -319,8 +400,8 @@ if (flashidx !== -1) {
 unhook();
 
 function parseSyncOptions(argv: any): SyncOptions {
-  const { noTranspile, restart, monitor } = argv;
-  return { type: 'sync', noTranspile, restart, monitor };
+  const { noTranspile, restart, monitor, toPc, toMc } = argv;
+  return { type: 'sync', noTranspile, restart, monitor, toPc, toMc };
 }
 
 export function parseArguments(): Options {
@@ -347,9 +428,12 @@ export function parseArguments(): Options {
     case 'monitor':
       const { restart, global } = argv;
       return { type: 'monitor', restart, global };
+    case 'build':
+      const { firmwareFile, firmwareConfig } = argv;
+      return { type: 'build', firmwareFile, firmwareConfig };
     case 'flash':
-      const { port } = argv;
-      return { type: 'flash', port, params: other };
+      const { port, init, resetNetwork, pro, proKey, firmwareFile: firmwareFile2, firmwareConfig: firmwareConfig2 } = argv;
+      return { type: 'flash', port, init, resetNetwork, pro, proKey, firmwareFile: firmwareFile2, firmwareConfig: firmwareConfig2, params: other };
     case 'update':
       const action = argv._[1] as any;
       return { type: 'update', action };

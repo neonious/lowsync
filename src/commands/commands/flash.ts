@@ -51,7 +51,7 @@ function check_wrover(path: string) {
     });
 }
 
-export default async function({ port, params }: FlashOptions) {
+export default async function({ port, init, resetNetwork, pro, /* proKey, firmwareFile, firmwareConfig */ params }: FlashOptions) {
   let doneErasing = false;
   let length: number | undefined;
   let downloaded = 0;
@@ -95,13 +95,13 @@ export default async function({ port, params }: FlashOptions) {
     check();
   }
 
-  function get_signed_data(mac: string, ideVersion: boolean) {
+  function get_signed_data(mac: string, pro: boolean) {
     return new Promise<Buffer>((resolve, reject) => {
       https.get(
         {
           hostname: 'neonious.com',
           port: 8443,
-          path: `/GetFlashData?mac=${mac}&ideVersion=` + (ideVersion ? 1 : 0),
+          path: `/GetFlashData?mac=${mac}&ideVersion=` + (pro ? 1 : 0),
           rejectUnauthorized: false,
           method: 'GET'
         },
@@ -236,49 +236,28 @@ export default async function({ port, params }: FlashOptions) {
     setDoneErasing();
   }
 
-  let ideVersion = false;
-  let do_init = false,
-    reset_network = false;
-  let pos;
-
-  if (!params) params = [];
-  else {
-    pos = params.indexOf('--ide-ota');
-    if (pos >= 0) {
-        ideVersion = true;
-        params.splice(pos, 1);
-    }
-    pos = params.indexOf('--init');
-    if (pos >= 0) {
-      do_init = true;
-      params.splice(pos, 1);
-    }
-    pos = params.indexOf('--reset-network');
-    if (pos >= 0) {
-      reset_network = true;
-      params.splice(pos, 1);
-    }
-  }
-
+  if(!port)
+    throw new RunError('No port specified. Please use --port=.. to specify the port.')
   params.push('-p');
   params.push(port.toString());
 
   // Sane check
   if ((await call('version', true)) === false) {
-    console.log('*** esptool cannot be used.');
+    console.log(chalk.bgRed('*** esptool cannot be used.'));
     console.log('Please check if you have Python installed.');
     console.log(
       "If yes, please check if you have pyserial installed (if not try 'pip install pyserial' or 'py -m pip install pyserial' depending on the system)."
     );
+    process.exit(1);
     return;
   }
 
   // Get mac address
   console.log('*** Step 1/3: Probing ESP32 microcontroller');
   let mac = (await call('read_mac', false, true)) as string;
-  let ideVersionSupported = false;
+  let proSupported = false;
 
-  if(do_init) {
+  if(init) {
     // Double check if device is an ESP32-WROVER as people just don't understand that this is important...
     console.log('    now checking if it is an ESP32-WROVER... (takes a while)');
 
@@ -301,7 +280,7 @@ export default async function({ port, params }: FlashOptions) {
       if(!size)
           throw new RunError('ESP32 is not an ESP32-WROVER or at least does not have required 4 MB PSRAM!\nPlease check: https://www.lowjs.org/supported-hardware.html');
       if(size >= 9 * 1024 * 1024)
-        ideVersionSupported = true;
+        proSupported = true;
     }
 
   // open browser window here, no not wait and ignore any unhandled promise catch handlers
@@ -310,21 +289,21 @@ export default async function({ port, params }: FlashOptions) {
 
   // Get signed data based on MAC address and do flash erase in parallel, if requested
   let data;
-  if (do_init) {
+  if (init) {
     console.log(
       '*** Step 2/3: Erasing flash and downloading image in parallel'
     );
-    data = (await Promise.all([get_signed_data(mac, ideVersion), erase_flash()]))[0];
+    data = (await Promise.all([get_signed_data(mac, pro), erase_flash()]))[0];
   } else {
     console.log('*** Step 2/3: Downloading image');
     setDoneErasing();
-    data = await get_signed_data(mac, ideVersion);
+    data = await get_signed_data(mac, pro);
   }
-  if(data.length == 0 && ideVersion)
+  if(data.length == 0 && pro)
     throw new RunError('The IDE+OTA version of low.js not licensed for this device with the code ' + mac + '. Please buy a license in the neonious store at https://www.neonious.com/Store');
-    if(ideVersion && !ideVersionSupported)
+    if(pro && !proSupported)
     throw new RunError('The IDE+OTA version of low.js is not supported on this device, as it has less than 9 MB of flash space available.');
-  data.writeUInt8(reset_network ? 1 : 0, data.length - 33);
+  data.writeUInt8(resetNetwork ? 1 : 0, data.length - 33);
 
   console.log('*** Step 3/3: Flashing image');
 
@@ -332,7 +311,7 @@ export default async function({ port, params }: FlashOptions) {
   let boot_partition_file = path.join(dir, 'part1');
   let app_data_file = path.join(dir, 'part2');
 
-  if(ideVersion) {
+  if(pro) {
     await fs.writeFile(boot_partition_file, data.slice(0, 0x1F0000));
     await fs.writeFile(app_data_file, data.slice(0x1F0000));
     await call([
@@ -359,13 +338,13 @@ export default async function({ port, params }: FlashOptions) {
     await fs.rmdir(dir);
   } catch (e) {}
 
-  if (do_init) console.log('*** Done, low.js flashed, now in factory state');
-  else if (reset_network)
+  if (init) console.log('*** Done, low.js flashed, now in factory state');
+  else if (resetNetwork)
     console.log(
       '*** Done, low.js flashed and network settings resetted to factory state'
     );
   else console.log('*** Done, low.js updated');
-  if (do_init || reset_network) {
+  if (init || resetNetwork) {
     let passHash = data.slice(data.length - 12);
     let pass = '';
     for (let i = 0; i < 12; i++) {
@@ -384,6 +363,6 @@ export default async function({ port, params }: FlashOptions) {
     console.log('In this Wifi, the microcontroller has the IP 192.168.0.1');
   } else
     console.log('First time to flash? You need to use --init to get the required login credentials')
-  if(!ideVersion && ideVersionSupported)
-    console.log(chalk.bgYellow('Note: Your device has enough flash space to support the low.js version with on-board web-based IDE + debugger and over-the-air updating. Please check the neonious store https://www.neonious.com/Store for more information!'));
+  if(!pro && proSupported)
+    console.log(chalk.bgYellow('Note: Your device has enough flash space to support low.js Professional with on-board web-based IDE + debugger, over-the-air updating and native modules. Please check https://www.neonious.com/Store for more information!'));
 }

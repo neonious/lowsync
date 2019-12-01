@@ -1,8 +1,8 @@
 {
   "name": "lowsync",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "license": "MIT",
-  "description": "A tool to program the neonious one and other low.js for ESP32 based devices with external IDEs. Allows the user to sync directories to the device, change settings, start/stop programs and more.",
+  "description": "A tool to program low.js for ESP32 based devices. Allows the user to sync directories to the device, change settings, start/stop programs and more.",
   "repository": {
     "type": "git",
     "url": "https://github.com/neonious/lowsync.git"
@@ -24,8 +24,8 @@
     "node": ">=8 <12"
   },
   "dependencies": {
-    "@babel/core": "^7.6.4",
-    "@babel/preset-env": "^7.6.3",
+    "@babel/core": "^7.7.2",
+    "@babel/preset-env": "^7.7.1",
     "@types/jszip": "^3.1.4",
     "@types/proper-lockfile": "^3.0.0",
     "@types/yargs": "^12.0.2",
@@ -33,7 +33,7 @@
     "chalk": "^2.3.1",
     "cli-progress": "^2.1.0",
     "find-up": "^3.0.0",
-    "fs-extra": "^4.0.3",
+    "fs-extra": "^7.0.0",
     "http-status-codes": "^1.3.0",
     "inquirer": "^5.0.0",
     "inversify-binding-decorators": "^4.0.0",
@@ -44,20 +44,23 @@
     "opn": "^5.4.0",
     "prettyjson": "^1.2.1",
     "proper-lockfile": "^3.2.0",
-    "react": "^16.2.0",
+    "react": "^16.4.2",
     "reflect-metadata": "^0.1.12",
     "replace-ext": "^1.0.0",
     "request": "^2.85.0",
     "request-promise-native": "^1.0.5",
-    "rimraf": "^2.6.2",
-    "serialport": "^7.1.4",
+    "rimraf": "^2.6.3",
+    "serialport": "^7.1.5",
     "source-map-support": "^0.5.16",
     "ts-transformer-keys": "https://github.com/neoncom/ts-transformer-keys/tarball/master",
     "underscore.string": "^3.3.5",
-    "uuid": "^3.1.0",
-    "ws": "^3.3.3",
+    "uuid": "^3.3.2",
+    "ws": "^6.0.0",
     "xml2js": "^0.4.19",
-    "yargs": "^12.0.5"
+    "yargs": "^12.0.5",
+    "execa": "^1.0.0",
+    "lodash": "^4.17.15",
+    "uglify-es": "^3.3.9"
   },
   "devDependencies": {
     "@neoncom/ts-loader": "^4.1.0",
