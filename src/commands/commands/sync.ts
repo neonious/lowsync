@@ -83,13 +83,13 @@ export default async function(options: SyncOptions) {
   }
 
   function doTranspile() {
-    let noTranspile = false;
-    if (typeof options.noTranspile !== 'undefined') {
-      noTranspile = options.noTranspile;
+    let transpile = false;
+    if (typeof options.transpile !== 'undefined') {
+        transpile = options.transpile;
     } else if (typeof config.transpile !== 'undefined') {
-      noTranspile = !config.transpile;
+        transpile = config.transpile;
     }
-    return !noTranspile;
+    return transpile;
   }
 
   await prepareSyncFolder();
@@ -182,7 +182,7 @@ export default async function(options: SyncOptions) {
 
     const synchronizer = getFileSynchronizer(
       config.syncDir,
-      !doTranspile,
+      !doTranspile(),
       baseFilesStruct,
       remoteFilesStruct,
       localFileStruct,

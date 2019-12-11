@@ -57,7 +57,7 @@ export interface StopOptions {
 
 export interface SyncOptions {
   type: 'sync';
-  noTranspile?: boolean;
+  transpile?: boolean;
   restart?: boolean;
   monitor?: boolean;
   toPc: boolean;
@@ -126,11 +126,11 @@ const argv1 = yargs
     'Sync and, by default, transpile the files being transfered from this computer to the microcontroller.',
     yargs => {
       return yargs
-        .option('no-transpile', {
+        .option('transpile', {
           type: 'boolean',
-          default: undefined,
+          default: true,
           describe:
-            'Disable the transpilation of source files (only >=ES6 JavaScript files, NO TypeScript, etc.) to ES5. Be sure that you know what you are doing before using this option!'
+            'Transpile source files (only JavaScript files, NO TypeScript, etc.) to ES5, allowing to use features >= ES6. To disable, append =false to this option. '
         })
         .option('to-mc', {
           type: 'boolean',
@@ -400,8 +400,8 @@ if (flashidx !== -1) {
 unhook();
 
 function parseSyncOptions(argv: any): SyncOptions {
-  const { noTranspile, restart, monitor, toPc, toMc } = argv;
-  return { type: 'sync', noTranspile, restart, monitor, toPc, toMc };
+  const { transpile, restart, monitor, toPc, toMc } = argv;
+  return { type: 'sync', transpile, restart, monitor, toPc, toMc };
 }
 
 export function parseArguments(): Options {
