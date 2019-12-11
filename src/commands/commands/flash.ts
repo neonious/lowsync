@@ -120,12 +120,14 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
             proKey,
             mac
         });
+    if(pro === undefined)
+        pro = (firmware.readUInt8(8) & 8) ? true : false;
 
     return await new Promise((resolve, reject) => {
         const options = {
             hostname: 'neonious.com',
             port: 8444,
-            path: '/api/SignFirmware?mac=' + mac + (pro ? '&pro=1' : '') + (proKey ? '&proKey=${proKey}' : ''),
+            path: '/api/SignFirmware?mac=' + mac + (pro ? '&pro=1' : '') + (proKey ? '&proKey=' + proKey : ''),
             method: 'POST',
             headers: {
                 'Content-Type': 'application/firmware'
@@ -173,7 +175,7 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
                 }
                 else {
                     let data = Buffer.concat(dat);
-                    let final = Buffer.concat([data.slice(0, 0xF000), firmware.slice(0x80, 0x1FF080 - 128), data.slice(0xF000)]);
+                    let final = Buffer.concat([data.slice(0, 0xF000), firmware.slice(0x80, 0x1FF080 - 128), data.slice(0xF000), firmware.slice(0x1FF080)]);
                     finish();
                     resolve(final);
                 }
@@ -416,8 +418,7 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
         || (lowjsFlags & (8 | 4 | 16)) != (sig!.readUInt8(8) & (8 | 4 | 16)))
             throw new RunError('Current firmware on microcontroller is not compatible to the one being flashed, check firmware config for differences');
     }
-
-    data.writeUInt8(0x1FF000 - 21, resetNetwork ? 1 : 0);
+    data.writeUInt8(resetNetwork ? 1 : 0, 0x1FF000 - 21);
 
     console.log('*** Step 3/3: Flashing firmware');
 

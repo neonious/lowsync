@@ -286,7 +286,6 @@ export default async function({ firmwareFile, firmwareConfig }: BuildOptions, fl
         data = final;
     }
 
-    if(firmwareFile) {
         let memLowJS = 0, memStatic = 0, memFactory = 0, memModules = 0, memSettings = 0;
         for(let i in files) {
             if(i.indexOf('/fs_factory/user/') == 0)
@@ -300,7 +299,7 @@ export default async function({ firmwareFile, firmwareConfig }: BuildOptions, fl
             else
                 memLowJS += files[i][1].length;
         }
-        memLowJS = data.length - 0x1FF000 - memStatic - memFactory - memModules - memSettings;
+        memLowJS = data.length - 0x1F0080 - memStatic - memFactory - memModules - memSettings;
 
         console.log("****** Used flash space: ******")
         console.log("low.js code     " + ('          ' + 0x200000).substr(-9) + ' bytes');
@@ -333,6 +332,7 @@ export default async function({ firmwareFile, firmwareConfig }: BuildOptions, fl
             console.log("Total           " + ('          ' + memRequired).substr(-9) + ' bytes');
             console.log("Reserved          rest of Flash");
         }
+        if(firmwareFile) {
             await fs.writeFile(firmwareFile, data);
     console.log("Written firmware file " + firmwareFile + " (" + data.length + " bytes)");
   } else
