@@ -30,7 +30,7 @@ async function installUpdate(version: string) {
     );
   } else {
     throw new RunError(
-      'An error has occured. The device cannot start the updating process!'
+      'Error: The device cannot start the updating process!'
     );
   }
 }

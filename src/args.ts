@@ -72,8 +72,8 @@ export interface MonitorOptions {
 
 export interface BuildOptions {
   type: 'build';
-  firmwareFile: string;
-  firmwareConfig: string;
+  firmwareFile?: string;
+  firmwareConfig?: string;
 }
 
 export interface FlashOptions {
@@ -81,7 +81,7 @@ export interface FlashOptions {
   port: string;
   init: boolean;
   resetNetwork: boolean;
-  pro: boolean;
+  pro?: boolean;
   proKey?: string;
   firmwareFile?: string;
   firmwareConfig?: string;
@@ -312,7 +312,7 @@ const argv1 = yargs
         })
         .option('pro', {
           type: 'boolean',
-          default: false,
+          default: undefined,
           describe:
             'Flashes low.js Professional. Requires a registered license bought in the shop at https://www.neonious.com/Store'
         })

@@ -27,11 +27,11 @@ async function main() {
     await run(args);
   } catch (ex) {
     if (ex instanceof RunError) {
-      console.error(chalk.white.bgRed('An error has occured: ' + ex.message));
+      console.error(chalk.white.bgRed('Error: ' + ex.message));
     } else {
       console.error(
         chalk.white.bgRed(
-          `An unexpected error has occured. ` + ex.message + ' ' + ex.stack
+          `Unexpected error: ` + ex.message + ' ' + ex.stack
         )
       );
     }

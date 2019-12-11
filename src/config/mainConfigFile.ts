@@ -13,6 +13,7 @@ export interface CommandOptions {
   syncDir?: string;
   transpile?: boolean;
   exclude?: string[];
+  flashPort?: string;
 }
 
 export type ConfigOptions = CommandOptions & RemoteOptions;
@@ -29,7 +30,7 @@ export function createNewConfig(): ConfigFile<ConfigOptions> {
         type: 'string',
         prompt: {
           message:
-            'What is the IP address of the microcontroller on your network?',
+            'IP address of the microcontroller on your network:',
           defaultValue: '192.168.0.1'
         },
         validate: ip => {
@@ -41,7 +42,7 @@ export function createNewConfig(): ConfigFile<ConfigOptions> {
       port: {
         optional: true,
         prompt: {
-          message: 'What is the port of the microcontroller on your network?',
+          message: 'Port of the microcontroller on your network:',
           defaultValue: 8443
         },
         type: 'integer',
@@ -69,7 +70,7 @@ export function createNewConfig(): ConfigFile<ConfigOptions> {
       syncDir: {
         optional: true,
         prompt: {
-          message: 'What is the local directory that you want to sync with?',
+          message: 'The local directory that you want to sync with:',
           defaultValue: process.cwd()
         },
         type: 'string',
@@ -98,6 +99,14 @@ export function createNewConfig(): ConfigFile<ConfigOptions> {
             'Enable ES 6 (and more) via automatic Babel transpilation? (if disabled, you will have to handle this yourself!)',
           defaultValue: true
         }
+      },
+      flashPort: {
+        optional: true,
+        prompt: {
+          message: 'The serial port which the USB/serial chip of the ESP32 board creates:',
+        },
+        type: 'string',
+        noInit: true
       },
       exclude: {
         type: 'any',
