@@ -175,7 +175,7 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
                 }
                 else {
                     let data = Buffer.concat(dat);
-                    let final = Buffer.concat([data.slice(0, 0xF000), firmware.slice(0x80, 0x1FF080 - 128), data.slice(0xF000), firmware.slice(0x1FF080)]);
+                    let final = Buffer.concat([data.slice(0, 0xF000), firmware.slice(0x80, 0x1F0080 - 128), data.slice(0xF000), firmware.slice(0x1F0080)]);
                     finish();
                     resolve(final);
                 }
@@ -366,9 +366,12 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
                 throw new RunError('Current firmware on microcontroller is not based on low.js, please flash with --init option');
         }
 
-    // open browser window here, no not wait and ignore any unhandled promise catch handlers
-    const opn = require('opn');
-    await opn('https://www.neonious.com/ThankYou', { wait: false }).catch(noop);
+
+    if(!pro && !firmwareFile && !firmwareConfig) {
+        // open browser window here, no not wait and ignore any unhandled promise catch handlers
+        const opn = require('opn');
+        await opn('https://www.neonious.com/ThankYou', { wait: false }).catch(noop);
+    }
 
     // Get signed data based on MAC address and do flash erase in parallel, if requested
     if (init) {
@@ -433,8 +436,8 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
     }
     if(init) {
         if(dataAt4xx) {
-            await push_parts(0x1000, data.slice(0, 0x1F0000));
-            await push_parts(0x400000, data.slice(0x1F0000));
+            await push_parts(0x1000, data.slice(0, 0x1FF000));
+            await push_parts(0x400000, data.slice(0x1FF000));
             await call(params);
         } else {
             await push_parts(0x1000, data);
@@ -443,8 +446,8 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
     } else {
         // skip everything below NVS
         if(dataAt4xx) {
-            await push_parts(0xE000, data.slice(0xD000, 0x1F0000));
-            await push_parts(0x400000, data.slice(0x1F0000));
+            await push_parts(0xE000, data.slice(0xD000, 0x1FF000));
+            await push_parts(0x400000, data.slice(0x1FF000));
             await call(params);
         } else {
             await push_parts(0xE000, data.slice(0xD000));
@@ -457,14 +460,18 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
     } catch (e) {}
     throw e;
   }
+  try {
+    await fs.remove(dir);
+} catch (e) {}
 
-  if (init) console.log('*** Done, low.js flashed, now in factory state');
+  if (init)
+    console.log('*** Done, low.js flashed. Please give your device a few seconds to reset to factory state');
   else if (resetNetwork)
-    console.log(
-      '*** Done, low.js flashed and network settings resetted to factory state'
-    );
-  else console.log('*** Done, low.js updated');
-  if (init || resetNetwork) {
+    console.log('*** Done, low.js flashed and network settings resetted to factory state');
+  else
+    console.log('*** Done, low.js updated');
+
+    if (init || resetNetwork) {
     let passHash = data.slice(0x6000 + 16, 0x6000 + 16 + 12);
     let pass = '';
     for (let i = 0; i < 12; i++) {

@@ -128,7 +128,7 @@ const argv1 = yargs
       return yargs
         .option('transpile', {
           type: 'boolean',
-          default: true,
+          default: undefined,
           describe:
             'Transpile source files (only JavaScript files, NO TypeScript, etc.) to ES5, allowing to use features >= ES6. To disable, append =false to this option. '
         })

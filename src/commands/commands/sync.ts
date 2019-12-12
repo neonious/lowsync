@@ -83,7 +83,7 @@ export default async function(options: SyncOptions) {
   }
 
   function doTranspile() {
-    let transpile = false;
+    let transpile = true;
     if (typeof options.transpile !== 'undefined') {
         transpile = options.transpile;
     } else if (typeof config.transpile !== 'undefined') {
