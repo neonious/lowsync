@@ -170,7 +170,8 @@ export default async function({ firmwareFile, firmwareConfig }: BuildOptions, fl
   data.writeUInt8(
       (config.lowjs.ota_update_support ? 16 : 0) |
       (config.lowjs.pro ? 8 : 0) |
-      (flashOptions.stock ? 0 : 4), 8);
+      (flashOptions.stock ? 0 : 4) |
+      (config.settings && config.settings.wifi && (config.settings.wifi.ssid !== undefined || config.settings.wifi.password !== undefined) ? 32 : 0), 8);
 
     // Load all files
     let files: any = {};

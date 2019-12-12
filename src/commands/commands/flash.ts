@@ -327,6 +327,8 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
   let mac = (await call('read_mac', false, true)) as string;
 
   let data;
+  let lowjsFlags;
+
   try {
 
     let systemSize;
@@ -397,7 +399,7 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
 
     // pro && (!custom || ota support)
     let newSize = data.readUInt32LE(0x6004);
-    let lowjsFlags = data.readUInt8(0x6008);
+    lowjsFlags = data.readUInt8(0x6008);
 
     let dataAt4xx = (lowjsFlags & 8) && (!(lowjsFlags & 4) || (lowjsFlags & 16));
     if(!newSize) {
@@ -471,7 +473,7 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
   else
     console.log('*** Done, low.js updated');
 
-    if (init || resetNetwork) {
+    if ((init || resetNetwork) && !(lowjsFlags & 32)) {
     let passHash = data.slice(0x6000 + 16, 0x6000 + 16 + 12);
     let pass = '';
     for (let i = 0; i < 12; i++) {
