@@ -1,5 +1,6 @@
 import { BuildOptions } from '../../args';
 import * as fs from 'fs-extra';
+import * as crypto from 'crypto';
 import * as path from 'path';
 import { request } from 'https';
 import { RunError } from '../../runError';
@@ -286,6 +287,13 @@ export default async function({ firmwareFile, firmwareConfig }: BuildOptions, fl
 
         data = final;
     }
+
+    // Add MD5
+    let hash = crypto
+      .createHash('md5')
+      .update(data.slice(0x1F0080))
+      .digest();
+    hash.copy(data, 64 + 16);
 
         let memLowJS = 0, memStatic = 0, memFactory = 0, memModules = 0, memSettings = 0;
         for(let i in files) {
