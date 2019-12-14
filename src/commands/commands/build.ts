@@ -5,7 +5,30 @@ import * as path from 'path';
 import { request } from 'https';
 import { RunError } from '../../runError';
 import * as bytes from 'bytes';
+import { configFile } from '../../config/mainConfigFile';
+import { isJavascriptFile } from '@common/common/pathUtil';
 
+function transpileJavaScript(
+    source: string
+  ): { compiled: string; map: string } {
+    const babel = require('@babel/core');
+    const result = babel.transform(source, {
+        configFile: false,
+      presets: [require("@babel/preset-env")],
+      sourceMaps: 'both',
+      parserOpts: {
+              allowReturnOutsideFunction: true
+            }
+    });
+    const compiled = result.code;
+    const map = JSON.stringify(result.map);
+    return {
+      compiled,
+      map
+    };
+  } // todo make sure all dot files are excluded and .build not synced
+
+  
 export default async function({ firmwareFile, firmwareConfig }: BuildOptions, flashOptions: any) {
   let config: any;
 
@@ -210,8 +233,16 @@ export default async function({ firmwareFile, firmwareConfig }: BuildOptions, fl
             delete files['/fs_factory/modules.json'];
         }
 
+        let transpile = false;
+        let configTranspile = await configFile.getKey('transpile');
+        if (typeof config.transpile !== 'undefined') {
+            transpile = config.transpile;
+        } else if (typeof configTranspile !== 'undefined') {
+            transpile = configTranspile;
+        }
+
         // FACTORY
-        async function walkdir(pathIn: string, pathOut: string) {
+        async function walkdir(pathIn: string, pathOut: string, buildPathOut: string) {
             let added = false;
             let filesdir = await fs.readdir(pathIn);
             for(let i = 0; i < filesdir.length; i++) {
@@ -220,14 +251,22 @@ export default async function({ firmwareFile, firmwareConfig }: BuildOptions, fl
 
                 let newPathIn = path.join(pathIn, filesdir[i]);
                 let newPathOut = pathOut + '/' + filesdir[i];
+                let newBuildPathOut = buildPathOut + '/' + filesdir[i];
                 if((await fs.stat(newPathIn)).isDirectory()) {
-                    if(!await walkdir(newPathIn, newPathOut))
+                    if(!await walkdir(newPathIn, newPathOut, newBuildPathOut))
                         files[newPathOut + '/'] = [0, (Buffer.alloc(0)) as any];
 
                     added = true;
                 } else {
                     try {
                         files[newPathOut] = [0, (await fs.readFile(newPathIn)) as any];
+
+                        if (isJavascriptFile(path.basename(newPathIn)) && transpile) {
+                            const source = files[newPathOut].toString();
+                            const { compiled, map } = transpileJavaScript(source);
+                            files[newBuildPathOut] = [0, Buffer.from(compiled)];
+                            files[newBuildPathOut + '.map'] = [0, Buffer.from(map)];
+                        }
                         added = true;
                     } catch(e) {
                         console.error('Adding ' + newPathIn + ' failed: ' + e.message);
@@ -237,9 +276,9 @@ export default async function({ firmwareFile, firmwareConfig }: BuildOptions, fl
             return added;
         }
         if(config.factory_files)
-            await walkdir(config.factory_files, '/fs_factory/user');
+            await walkdir(config.factory_files, '/fs_factory/user', '/fs_factory/user/.build');
         if(config.static_files)
-            await walkdir(config.static_files, '/fs/user');
+            await walkdir(config.static_files, '/fs/user', '/fs/user/.build');
 
         if(config.settings) {
             function walksettings(orig: any, added: any) {
@@ -255,8 +294,12 @@ export default async function({ firmwareFile, firmwareConfig }: BuildOptions, fl
             files['/fs_factory/settings.json'][1] = Buffer.from(JSON.stringify(settings, null, 2));
         }
 
+        let filesSorted = Object.keys(files);
+        filesSorted.sort();
+
         let lenMeta = 8, lenPath = 0, lenData = 0, numFiles = 0;
-        for(let i in files) {
+        for(let i_ = 0; i_ < filesSorted.length; i_++) {
+            let i = filesSorted[i_];
             lenMeta += 16;
             lenPath += Buffer.from(i).length + 1;
             lenData += files[i][1].length;
@@ -266,14 +309,15 @@ export default async function({ firmwareFile, firmwareConfig }: BuildOptions, fl
         let final = Buffer.alloc(0x1F0080 + lenMeta + lenPath + lenData);
         data.copy(final, 0, 0, 0x1F0080);
 
-        final.writeUInt32LE(lenMeta, 0x1F0080);
+        final.writeUInt32LE(lenMeta + lenPath, 0x1F0080);
         final.writeUInt32LE(numFiles, 0x1F0080 + 4);
         let posMeta = 8, posPath = lenMeta, posFile = lenMeta + lenPath;
-        for(let i in files) {
+        for(let i_ = 0; i_ < filesSorted.length; i_++) {
+            let i = filesSorted[i_];
             final.writeUInt32LE(posPath, 0x1F0080 + posMeta + 0);
             final.writeUInt32LE(posFile, 0x1F0080 + posMeta + 4);
             final.writeUInt32LE(files[i][0] ? files[i][1].length : 0, 0x1F0080 + posMeta + 8);
-            final.writeUInt32LE(files[i][0] ? files[i][0] : files[i][1].length, 0x1F0080 + posMeta + 16);
+            final.writeUInt32LE(files[i][0] ? files[i][0] : files[i][1].length, 0x1F0080 + posMeta + 12);
             posMeta += 16;
 
             let fName = Buffer.from(i);
