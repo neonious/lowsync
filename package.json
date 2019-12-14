@@ -88,7 +88,7 @@
     "@types/webpack-bundle-analyzer": "^2.13.0",
     "@types/xml2js": "^0.4.3",
     "clean-webpack-plugin": "^0.1.19",
-    "copy-webpack-plugin": "^4.6.0",
+    "copy-webpack-plugin": "^5.1.1",
     "execa": "^1.0.0",
     "gulp": "^4.0.0",
     "hard-source-webpack-plugin": "^0.12.0",

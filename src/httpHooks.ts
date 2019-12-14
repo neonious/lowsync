@@ -73,9 +73,9 @@ onBeforeEachHttp(async (options: MyOptions) => {
   const url = `${protocol}://${options.ip}:${options.port}`;
   options.timer = setTimeout(() => {
     console.log(
-      `Testing connection to microcontroller at ${url}... This can take a while if your connection is bad. If the url is incorrect, please abort lowsync and change the config file or run lowsync init.`
+      `Still waiting for response at ${url}...`
     );
-  }, 10000);
+  }, 30000);
 
   return options;
 });
@@ -112,11 +112,11 @@ export async function onFail<TOptions extends MyOptions>(
   delete options.timer;
 
   if (connErr) {
+    const protocol = options.ssl ? 'https' : 'http';
+    const url = `${protocol}://${options.ip}:${options.port}`;
     console.error(
       chalk.red(
-        `The device cannot be reached with the provided protocol, IP and port (${`${
-          options.ip
-        } ${options.port} ssl: ${options.ssl}`}).`
+        `The device cannot be reached at ${url}. Make sure you are in the correct Wifi.`
       )
     );
     const ip = await configFile.prompt('ip');
