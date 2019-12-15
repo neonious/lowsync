@@ -56,7 +56,7 @@
     "request": "^2.85.0",
     "request-promise-native": "^1.0.5",
     "rimraf": "^2.6.3",
-    "serialport": "^7.1.5",
+    "serialport": "^8.0.5",
     "source-map-support": "^0.5.16",
     "ts-transformer-keys": "https://github.com/neoncom/ts-transformer-keys/tarball/master",
     "uglify-es": "^3.3.9",
