@@ -12,7 +12,7 @@ Synopsis
 
 .. code-block:: bash
 
-    lowsync flash <port> [params..]
+    lowsync flash --port=<port> [params..]
 
 Description
 ==================
@@ -26,7 +26,7 @@ Options
 
     <port>
 
-The serial port which the USB/serial chip of the ESP32 board creates. Under Windows this usually starts with "COM", on other systems with "/dev/tty".
+The serial port which the USB/serial chip of the ESP32 board creates. Under Windows this usually starts with "COM" (find out the correct one with the Device Manager), on other systems with "/dev/tty" (check file system to find the correct one).
 
 .. code-block:: bash
 

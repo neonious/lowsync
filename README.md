@@ -53,9 +53,7 @@ View the official [documentation](https://www.lowjs.org/lowsync-doc/index.html).
 
 ### Gulp tasks
 
-Use the locally installed version of gulp if you don't have it installed globally
-
-- `gulp publish-doc` - Publish documentation.
+- `npm run publish-doc` - Publish documentation.
 
 ## License
 
