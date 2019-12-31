@@ -15,7 +15,7 @@ function transpileJavaScript(
     const result = babel.transform(source, {
         configFile: false,
       presets: [require("@babel/preset-env")],
-      sourceMaps: 'both',
+      sourceMaps: true,
       parserOpts: {
               allowReturnOutsideFunction: true
             }
