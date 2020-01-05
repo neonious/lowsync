@@ -14,7 +14,7 @@ function transpileJavaScript(
     const babel = require('@babel/core');
     const result = babel.transform(source, {
         configFile: false,
-      presets: [require("@babel/preset-env")],
+      presets: [[require("@babel/preset-env"), {'ignoreBrowserslistConfig': true}]],
       sourceMaps: true,
       parserOpts: {
               allowReturnOutsideFunction: true
@@ -51,6 +51,17 @@ export default async function({ firmwareFile, firmwareConfig }: BuildOptions, fl
         ota_update_support: flashOptions.pro
       }};
   }
+
+  if(config.lowjs.ide_support && !config.lowjs.pro)
+    throw new RunError('Only low.js Professional supports the neonious IDE, please fix the configuration');
+  if(config.lowjs.ota_update_support && !config.lowjs.pro)
+    throw new RunError('Only low.js Professional supports Over-The-Air updating, please fix the configuration');
+
+  // Handle typical problems
+  if(config.settings && config.settings.wifi && config.settings.wifi.ssid && config.settings.wifi.ssid.length > 32)
+    throw new RunError('The Wifi SSID in the settings must be a maximum of 32 characters long');
+  if(config.settings && config.settings.wifi && config.settings.wifi.password && config.settings.wifi.password.length < 8)
+    throw new RunError('The Wifi password in the settings must be at least 8 characters long');
 
   let firmware_file;
   let modules_file;
@@ -215,6 +226,8 @@ export default async function({ firmwareFile, firmwareConfig }: BuildOptions, fl
             continue;
         if(config.factory_files !== undefined && txt.substr(0, '/fs_factory/user/'.length) == '/fs_factory/user/')
             continue;
+        if(config.lowjs.ide_support === false && config.lowjs.pro && txt.substr(0, '/client/'.length) == '/client/')
+            continue;
 
         pos = data.readUInt32LE(0x1F0080 + i * 16 + 12);
         let sizeCompressed = data.readUInt32LE(0x1F0080 + i * 16 + 16);
@@ -279,6 +292,8 @@ export default async function({ firmwareFile, firmwareConfig }: BuildOptions, fl
             await walkdir(config.factory_files, '/fs_factory/user', '/fs_factory/user/.build');
         if(config.static_files)
             await walkdir(config.static_files, '/fs/user', '/fs/user/.build');
+        if(config.lowjs.ide_support === false && config.lowjs.pro)
+            files['/client/index.html'] = [0, Buffer.from('<!DOCTYPE html><html><head><title>low.js / lowsync endpoint</title><style type="text/css">body { background-color: white; } * { font-family: Arial; }</style></head><body><h1>low.js / lowsync endpoint</h1><p>This is the HTTP(S) server which handles lowsync requests.</p></body>')];
 
         if(config.settings) {
             function walksettings(orig: any, added: any) {

@@ -69,7 +69,7 @@ function transpileJavaScript(
 ): { compiled: string; map: string } {
   const babel = require('@babel/core');
   const result = babel.transform(source, {
-    presets: [require("@babel/preset-env")],
+    presets: [[require("@babel/preset-env"), {'ignoreBrowserslistConfig': true}]],
     configFile: false,
     sourceMaps: true,
     parserOpts: {

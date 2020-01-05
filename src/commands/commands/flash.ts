@@ -408,7 +408,7 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
         if(dataAt4xx && (lowjsFlags & (4 | 16)) == (4 | 16))
             dataMaxLen = dataMaxLen / 2;
         if(data.length - 0x1FF000 > dataMaxLen)
-            throw new RunError('Total used flash space is higher than the space available on the device');
+            throw new RunError('Total used flash space is higher than the space available on the device (' + systemSize + ' bytes)');
     
         data.writeUInt32LE(newSize, 0x6004);
     }
@@ -417,7 +417,7 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
         throw new RunError('--pro flag is not identical with setting of firmware file / firmware config')
     if(init) {
         if(newSize > systemSize)
-            throw new RunError('Total used flash space is higher than the space available on the device');
+            throw new RunError('Total used flash space is higher than the space available on the device (' + systemSize + ' bytes)');
     } else {
         if((newSize && newSize != systemSize)
         || (lowjsFlags & (8 | 4 | 16)) != (sig!.readUInt8(8) & (8 | 4 | 16)))

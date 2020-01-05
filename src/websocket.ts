@@ -40,8 +40,10 @@ export async function monitor(options: MonitorOptions = {}) {
   console.log(chalk.bold("--- User program's output: ---"));
   websocketApi.Status.onMessage.subscribe(val => {
     if((val as any).code && (val as any).code.status == 'stopped') {
-        console.log(chalk.bold("--- Program exited. ---"));
-        process.exit(0);
+        setTimeout(() => {
+            console.log(chalk.bold("--- Program exited. ---"));
+            process.exit(0);
+        }, 2000);
     }
     if((val as any).console && (val as any).console.raw !== undefined) {
         rawMode = (val as any).console.raw as boolean;
@@ -71,7 +73,6 @@ export async function monitor(options: MonitorOptions = {}) {
     try {
         websocketApi.Status.send({stdin: {data: data.toString()}})
     } catch(e) {
-        console.error(e);
     }
   });
   process.stdin.resume();

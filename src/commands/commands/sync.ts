@@ -105,17 +105,17 @@ export default async function(options: SyncOptions) {
   const { stats: remoteFiles, hadPut } = await getRemoteFiles({
     excludeGlobs: exclude()
   });
-  if (!hadPut) {
+
+  let syncFileExists = await fs.pathExists(syncFilePath());
+  if (!hadPut && syncFileExists) {
     type T = 'abort' | 'initial_sync';
-    const syncFileExists = await fs.pathExists(syncFilePath());
-    if (localFiles.length && syncFileExists) {
-      const action = await promptList<T>({
+        const action = await promptList<T>({
         message:
-          'The filesystem of the microcontroller has not been synced before. What would you like to do?',
+          'The filesystem of the microcontroller has not been synced before, however the repository on your PC has been synced with another device. How would you like to continue?',
         default: 'abort',
         choices: [
           {
-            name: 'Abort synchronization',
+            name: 'Abort synchronization.',
             value: 'abort'
           },
           {
@@ -126,17 +126,43 @@ export default async function(options: SyncOptions) {
         ]
       });
 
-      if (action === 'abort') {
+      if (action === 'abort')
         return;
-      }
-    }
-
-    if (syncFileExists) {
       await fs.unlink(syncFilePath());
+      syncFileExists = false;
+    }
+    if(!hadPut)
+        await httpApi.SetLowSyncHadPut();
+
+    let doInitialCopy = false;
+    if(!syncFileExists && localFiles.length && remoteFiles.length) {
+        type T = 'abort' | 'initial_copy' | 'initial_sync';
+        const action = await promptList<T>({
+        message:
+          'The microcontroller has files in his file system (probably preinstalled example application), the repository on your PC also. How would you like to continue?',
+        default: 'initial_copy',
+        choices: [
+            {
+              name: 'Delete files on microcontroller and copy local files to microcontroller.',
+            value: 'initial_copy'
+          },
+          {
+            name: 'Sync both ways. This will ask you how to proceed where files exist both locally and remotely and differ. NO existing files or folders will be automatically overridden.',
+            value: 'initial_sync'
+            },
+            {
+              name: 'Abort synchronization.',
+              value: 'abort'
+            }
+        ]
+      });
+
+      if (action === 'abort')
+        return;
+      if(action == 'initial_copy')
+          doInitialCopy = true;
     }
 
-    await httpApi.SetLowSyncHadPut();
-  }
   const remoteFilesStruct = toStructure(remoteFiles);
 
   const baseFilesStruct = await loadSyncDataFile(syncFilePath());
@@ -147,10 +173,16 @@ export default async function(options: SyncOptions) {
     base: baseFilesStruct
   });
 
+  if(doInitialCopy) {
+      for(let i in actions)
+        if(actions[i].type != 'updateBase')
+          actions[i].type = 'syncToRemote';
+  }
   if(!options.toMc)
     actions = actions.filter((action) => { return action.type != 'syncToRemote'; });
   if(!options.toPc)
     actions = actions.filter((action) => { return action.type != 'syncToLocal'; });
+
   const userFinalActions = await askUser({
     actions: actions.filter(isAskUserAction)
     },
