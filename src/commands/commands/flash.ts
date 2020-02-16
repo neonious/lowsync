@@ -421,7 +421,7 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
     } else {
         if((newSize && newSize != systemSize)
         || (lowjsFlags & (8 | 4 | 16)) != (sig!.readUInt8(8) & (8 | 4 | 16)))
-            throw new RunError('Current firmware on microcontroller is not compatible to the one being flashed, check firmware config for differences');
+            throw new RunError('Current firmware on microcontroller is not compatible to the one being flashed, check firmware config for differences, or erase all data with the additional parameter --init');
     }
     data.writeUInt8(resetNetwork ? 1 : 0, 0x1FF000 - 21);
 
