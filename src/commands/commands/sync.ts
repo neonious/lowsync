@@ -241,8 +241,6 @@ export default async function(options: SyncOptions) {
 
   const { restart: _rs, monitor: _mon } = options;
 
-  if (!mcChanged && !_mon) return;
-
   const monitor = await confirmOrDefault({
     answer: _mon,
     message:
@@ -274,7 +272,7 @@ export default async function(options: SyncOptions) {
     }
   }
 
-  if (restart && mcChanged) {
+  if (restart) {
     console.log('Restarting program...');
     await restartProgram();
   }
