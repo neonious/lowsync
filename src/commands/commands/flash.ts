@@ -16,7 +16,7 @@ const Readline = require('@serialport/parser-readline');
 
 function check_wrover(path: string) {
     return new Promise((resolve, reject) => {
-        const port = new SerialPort(path, { baudRate: 921600 });
+        const port = new SerialPort(path, { baudRate: 115200 });
         const parser = new Readline();
 
         port.on('error', reject);
@@ -337,7 +337,6 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
     if(init) {
         // Double check if device is an ESP32-WROVER as people just don't understand that this is important...
         console.log('    now checking if it is an ESP32-WROVER... (takes a while)');
-
         let wrover_check_path = path.join(__dirname, 'wrover_check_mc');
 
         await call('erase_flash', false, false, true);
