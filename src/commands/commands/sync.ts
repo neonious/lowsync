@@ -224,19 +224,16 @@ export default async function(options: SyncOptions) {
     await synchronizer(syncLog);
   }
 
-  let mcChanged = false;
   for (const { destside, relPath, statType } of syncLog.filter(
     s => s.type === 'add'
   ) as SyncFileAdd[]) {
     const direction = destside === 'pc' ? 'MC => PC' : 'PC => MC';
     const fd = statType === 'dir' ? 'Folder' : 'File';
     console.log(`${direction}: +${fd} ${relPath}`);
-    if (destside === 'mc') mcChanged = true;
   }
   for (const { destside, relPath } of fakeSyncLog) {
     const direction = destside === 'pc' ? 'MC => PC' : 'PC => MC';
     console.log(`${direction}: -File/Folder ${relPath}`);
-    if (destside === 'mc') mcChanged = true;
   }
 
   const { restart: _rs, monitor: _mon } = options;
@@ -253,7 +250,6 @@ export default async function(options: SyncOptions) {
     if (_rs === true || monitor) {
       restart = true;
     } else {
-      if (mcChanged) {
         const status = await getProgramStatus();
         if (status !== 'updating_sys') {
           const msg =
@@ -267,7 +263,6 @@ export default async function(options: SyncOptions) {
               ' (Use the --restart command line option to remove this prompt and enable/disable restart after sync.)',
             default: true
           });
-        }
       }
     }
   }
