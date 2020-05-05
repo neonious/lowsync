@@ -275,7 +275,7 @@ export default async function({ firmwareFile, firmwareConfig }: BuildOptions, fl
                         files[newPathOut] = [0, (await fs.readFile(newPathIn)) as any];
 
                         if (isJavascriptFile(path.basename(newPathIn)) && transpile) {
-                            const source = files[newPathOut].toString();
+                            const source = files[newPathOut][1].toString();
                             const { compiled, map } = transpileJavaScript(source);
                             files[newBuildPathOut] = [0, Buffer.from(compiled)];
                             files[newBuildPathOut + '.map'] = [0, Buffer.from(map)];
