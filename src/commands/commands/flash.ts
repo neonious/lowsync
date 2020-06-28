@@ -133,7 +133,7 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
                 'Content-Type': 'application/firmware'
             }
         };
-    
+
         let done = false;
         let timeout = setTimeout(() => {
             if(!done) {
@@ -141,16 +141,16 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
                 try {
                     req.abort();
                 } catch(e) {}
-    
+
                 finish();
                 reject(new RunError('timeout trying to reach neonious servers'));
             }
         }, 120000);
-    
+
         let req = request(options, (res) => {
             if(res.statusCode == 200)
                 setTotalLength(parseInt(res.headers['content-length']!));
-    
+
             let dat = [] as any;
             res.on('data', (d) => {
                 dat.push(d);
@@ -197,27 +197,27 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
     args: string[],
     opts: SpawnOptions
   ) {
-	// Faster output than if we redirect to our stdout
-	if(writestd) {
-		if(!opts)
-			opts = {};
-		opts.stdio = ['inherit', 'inherit', 'inherit'];
-	}
+  // Faster output than if we redirect to our stdout
+  if(writestd) {
+    if(!opts)
+      opts = {};
+    opts.stdio = ['inherit', 'inherit', 'inherit'];
+  }
 
     const p = spawn(prog, args, opts);
     return new Promise<{ code: number; out: string }>((resolve, reject) => {
       p.on('error', reject);
       let out = '';
       if(p.stdout)
-	      p.stdout.on('data', data => {
-	        if (!writestd) out += data;
-	        else process.stdout.write(data);	// old
-	      });
+        p.stdout.on('data', data => {
+          if (!writestd) out += data;
+          else process.stdout.write(data);  // old
+        });
       if(p.stderr)
-	      p.stderr.on('data', data => {
-	        if (!writestd) out += data;
-	        else process.stderr.write(data);	// old
-	      });
+        p.stderr.on('data', data => {
+          if (!writestd) out += data;
+          else process.stderr.write(data);  // old
+        });
       p.on('close', code => {
         resolve({ code, out });
       });
@@ -338,8 +338,9 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
         // Double check if device is an ESP32-WROVER as people just don't understand that this is important...
         console.log('    now checking if it is an ESP32-WROVER... (takes a while)');
         let wrover_check_path = path.join(__dirname, 'wrover_check_mc');
-
+        console.log('███ If flashing manually do enter BOOTLOADER now');
         await call('erase_flash', false, false, true);
+        console.log('███ If flashing manually do enter BOOTLOADER now');
         await call([
             'write_flash',
             '0xe000',
@@ -351,7 +352,7 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
             '0x10000',
             wrover_check_path + '/wrover_check_mc.bin',
         ], false, false, true);
-
+        console.log('███ If flashing manually do RESET now');
         systemSize = await check_wrover(portAny.toString());
         if(!systemSize)
             throw new RunError('ESP32 is not an ESP32-WROVER or at least does not have required 4 MB PSRAM!\nPlease check: https://www.lowjs.org/supported-hardware.html');
@@ -359,6 +360,7 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
             proSupported = true;
      } else {
             let lwjs_signature_file = path.join(dir, 'sig');
+            console.log('███ If flashing manually do enter BOOTLOADER now');
             await call(['read_flash', '0x7000', '9', lwjs_signature_file], false, false, true);
             sig = await fs.readFile(lwjs_signature_file);
 
@@ -383,6 +385,7 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
             return promise.then(function(v: any){ return {v:v, status: "fulfilled" }},
                                 function(e: any){ return {e:e, status: "rejected" }});
         }
+        console.log('███ If flashing manually do enter BOOTLOADER now');
         let erase = erase_flash();
         try {
             data = (await Promise.all([get_signed_data(firmwareFile, firmwareConfig, mac, pro, proKey), erase]))[0] as any;
@@ -408,7 +411,7 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
             dataMaxLen = dataMaxLen / 2;
         if(data.length - 0x1FF000 > dataMaxLen)
             throw new RunError('Total used flash space is higher than the space available on the device (' + systemSize + ' bytes)');
-    
+
         data.writeUInt32LE(newSize, 0x6004);
     }
 
@@ -425,7 +428,7 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
     data.writeUInt8(resetNetwork ? 1 : 0, 0x1FF000 - 21);
 
     console.log('*** Step 3/3: Flashing firmware');
-
+    console.log('███ If flashing manually do enter BOOTLOADER now');
     // pro && (!costom || ota support)
     let params = ['write_flash'];
     let partNo = 1;
@@ -466,6 +469,7 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
 } catch (e) {}
 
   if (init)
+    console.log('███ If flashing manually do RESET now');
     console.log('*** Done, low.js flashed. Please give your device a few seconds to reset to factory state');
   else if (resetNetwork)
     console.log('*** Done, low.js flashed and network settings resetted to factory state');
