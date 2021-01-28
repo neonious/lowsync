@@ -5,6 +5,8 @@ import { configFile } from './config/mainConfigFile';
 import { RunError } from './runError';
 import './httpHooks';
 
+require('invariant');		// make sure package required by babel is loaded
+
 process.on('unhandledRejection', (reason, p) => {
   console.error(
     chalk.white.bgRed('Unhandled Rejection at: Promise' + p, 'reason:', reason)
