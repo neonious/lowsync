@@ -126,7 +126,7 @@ export default async function({ port, init, resetNetwork, pro, proKey, firmwareF
     return await new Promise((resolve, reject) => {
         const options = {
             hostname: 'neonious.com',
-            port: 8444,
+            port: 8445,
             path: '/api/SignFirmware?mac=' + mac + (pro ? '&pro=1' : '') + (proKey ? '&proKey=' + proKey : ''),
             method: 'POST',
             headers: {

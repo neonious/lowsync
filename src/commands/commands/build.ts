@@ -71,7 +71,7 @@ export default async function({ firmwareFile, firmwareConfig }: BuildOptions, fl
   firmware_file = await new Promise((resolve, reject) => {
     const options = {
         hostname: 'neonious.com',
-        port: 8444,
+        port: 8445,
         path: '/api/GetFirmware',
         method: 'POST',
         headers: {
@@ -127,7 +127,7 @@ export default async function({ firmwareFile, firmwareConfig }: BuildOptions, fl
         modules_file = await new Promise((resolve, reject) => {
             const options = {
                 hostname: 'neonious.com',
-                port: 8444,
+                port: 8445,
                 path: '/api/GetModules',
                 method: 'POST',
                 headers: {
